@@ -3,130 +3,124 @@ import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# Configure the main page layout
+# Page Config
 st.set_page_config(
-    page_title="DTC Training & HR Analytics",
-    page_icon="📊",
+    page_title="District Training Center Software",
+    page_icon="🏛️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Helper function to connect to Google Sheets using Streamlit Secrets
+# Connect to Google Sheets
 @st.cache_resource
 def get_sheets_client():
     try:
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         creds_dict = dict(st.secrets["gcp_service_account"])
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-        client = gspread.authorize(creds)
-        return client
+        return gspread.authorize(creds)
     except Exception as e:
-        st.error(f"Error connecting to Google Sheets: {e}")
         return None
-
-# Sidebar Navigation
-st.sidebar.title("Navigation")
-menu = ["Dashboard", "Trainee Management", "HR Records", "Settings"]
-choice = st.sidebar.radio("Go to", menu)
 
 client = get_sheets_client()
 
-# Main Views
-if choice == "Dashboard":
-    st.title("📊 Training Center Analytics Dashboard")
-    st.markdown("Live Training & HR data powered by your Master Google Sheet.")
+# Sidebar Navigation matching your CSV modules
+st.sidebar.title("🏛️ DTC Navigation")
+main_module = st.sidebar.selectbox(
+    "Select Module", 
+    ["1. Training Summary", "2. Current Year Data (26-27)", "3. Training Database", "4. Knowledge Bank", "5. About Us"]
+)
+
+# --- MODULE 1: TRAINING SUMMARY ---
+if main_module == "1. Training Summary":
+    st.title("📊 Training Summary")
+    st.markdown("### Yearwise Training Performance")
+    st.info("Here you can analyze year-over-year training achievements pulled from your Google Sheet.")
     
-    if client is None:
-        st.warning("⚠️ Please check your Streamlit Secrets configuration.")
-    else:
+    # Placeholder for pulling Yearwise data
+    if client:
         try:
-            # Open your Google Sheet by its exact name in Google Drive
-            # Make sure you have a sheet named "DTC_Database" with worksheets named "Trainees" and "HR"
             sh = client.open("DTC_Database")
-            
-            # Fetch Trainee metrics
-            trainee_ws = sh.worksheet("Trainees")
-            trainee_data = pd.DataFrame(trainee_ws.get_all_records())
-            
-            # Fetch HR metrics
-            hr_ws = sh.worksheet("HR")
-            hr_data = pd.DataFrame(hr_ws.get_all_records())
-            
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Total Trainees Registered", len(trainee_data) if not trainee_data.empty else 0)
-            col2.metric("Total Staff Members", len(hr_data) if not hr_data.empty else 0)
-            col3.metric("System Status", "Online & Synced")
-            
-            st.subheader("Recent Trainee Records")
-            if not trainee_data.empty:
-                st.dataframe(trainee_data.tail(5), use_container_width=True)
-            else:
-                st.info("No trainee records found yet. Use the 'Trainee Management' tab to add some!")
-                
-        except Exception as e:
-            st.error(f"Could not load worksheets. Make sure your Google Sheet is named 'DTC_Database' and has sheets named 'Trainees' and 'HR'. Details: {e}")
+            ws = sh.worksheet("Yearwise_Performance")
+            data = pd.DataFrame(ws.get_all_records())
+            st.dataframe(data, use_container_width=True)
+        except Exception:
+            st.warning("Please create a worksheet named 'Yearwise_Performance' in your Google Sheet.")
 
-elif choice == "Trainee Management":
-    st.title("🎓 Trainee Management & Registration")
+# --- MODULE 2: CURRENT YEAR DATA ---
+elif main_module == "2. Current Year Data (26-27)":
+    st.title("📅 Current Year Data (2026-27)")
     
-    with st.form("trainee_form"):
-        st.subheader("Add New Trainee")
-        col1, col2 = st.columns(2)
-        with col1:
-            name = st.text_input("Trainee Full Name")
-            batch = st.text_input("Batch / Program Name")
-        with col2:
-            contact = st.text_input("Contact Number / Email")
-            status = st.selectbox("Status", ["Active", "Completed", "Dropped"])
-            
-        submit_button = st.form_submit_button(label="Save Trainee to Google Sheet")
-        
-        if submit_button:
-            if client and name:
-                try:
-                    sh = client.open("DTC_Database")
-                    ws = sh.worksheet("Trainees")
-                    ws.append_row([name, batch, contact, status])
-                    st.success(f"Successfully added {name} to Google Sheets!")
-                except Exception as e:
-                    st.error(f"Failed to save data: {e}")
-            else:
-                st.warning("Please fill in the trainee's name and ensure the database is connected.")
-
-elif choice == "HR Records":
-    st.title("👥 HR & Staff Records")
+    sub_tab = st.selectbox(
+        "Select Section", 
+        ["Registration 26-27", "Pre-Test 26-27", "Post-Test 26-27", "Feedback 26-27", "Field Evaluation", "Monthly Report", "Group Photos"]
+    )
     
-    with st.form("hr_form"):
-        st.subheader("Add Staff Attendance / Record")
-        col1, col2 = st.columns(2)
-        with col1:
-            staff_name = st.text_input("Staff Member Name")
-            role = st.text_input("Designation / Role")
-        with col2:
-            attendance_status = st.selectbox("Attendance", ["Present", "Absent", "On Leave"])
-            date = st.date_input("Date")
-            
-        hr_submit = st.form_submit_button(label="Save HR Record to Google Sheet")
-        
-        if hr_submit:
-            if client and staff_name:
-                try:
-                    sh = client.open("DTC_Database")
-                    ws = sh.worksheet("HR")
-                    ws.append_row([staff_name, role, attendance_status, str(date)])
-                    st.success(f"Successfully recorded data for {staff_name}!")
-                except Exception as e:
-                    st.error(f"Failed to save HR record: {e}")
-            else:
-                st.warning("Please fill in the staff name.")
+    if sub_tab == "Registration 26-27":
+        st.subheader("📝 Trainee Registration")
+        # Add registration form / table view here
+    elif sub_tab == "Pre-Test 26-27":
+        st.subheader("📋 Pre-Test Records")
+    elif sub_tab == "Post-Test 26-27":
+        st.subheader("📈 Post-Test Records")
+    elif sub_tab == "Feedback 26-27":
+        st.subheader("⭐ Feedback Analysis")
+    elif sub_tab == "Field Evaluation":
+        st.subheader("🔍 Field Evaluation Reports")
+    elif sub_tab == "Monthly Report":
+        st.subheader("📅 Monthly Progress Reports")
+    elif sub_tab == "Group Photos":
+        st.subheader("🖼️ Training Batch Group Photos")
 
-elif choice == "Settings":
-    st.title("⚙️ Settings & Database Structure")
-    st.markdown("""
-    ### Google Sheet Setup Checklist:
-    1. Create a Google Sheet named **`DTC_Database`**.
-    2. Create two tabs inside it named exactly:
-       - **`Trainees`** (Columns: `Name`, `Batch`, `Contact`, `Status`)
-       - **`HR`** (Columns: `StaffName`, `Role`, `Attendance`, `Date`)
-    3. Share your Google Sheet with your Google Cloud Service Account email as an **Editor**.
-    """)
+# --- MODULE 3: TRAINING DATABASE ---
+elif main_module == "3. Training Database":
+    st.title("🗄️ Training Database (Directory)")
+    
+    db_category = st.selectbox(
+        "Select Personnel Database", 
+        ["MO Database", "AYUSH MO Database", "RBSK MO Database", "CHO Database", "ANM Database", "MPHW Database", "ASHA Database"]
+    )
+    
+    st.markdown(f"### Viewing: {db_category}")
+    if client:
+        try:
+            sh = client.open("DTC_Database")
+            ws = sh.worksheet(db_category)
+            data = pd.DataFrame(ws.get_all_records())
+            st.dataframe(data, use_container_width=True)
+            
+            # Simple search filter
+            search_query = st.text_input(f"Search in {db_category}")
+            if search_query:
+                filtered = data[data.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)]
+                st.dataframe(filtered, use_container_width=True)
+        except Exception:
+            st.warning(f"Worksheet '{db_category}' not found in your Google Sheet. Please add it!")
+
+# --- MODULE 4: KNOWLEDGE BANK ---
+elif main_module == "4. Knowledge Bank":
+    st.title("📚 Knowledge Bank & Resources")
+    
+    kb_section = st.selectbox(
+        "Select Resource Category",
+        ["Prayers", "Training Materials (PDF/PPT/Videos)", "Pre/Post Test Forms", "Feedback Forms", "Field Evaluation Forms", "Innovations", "Games", "Govt Schemes"]
+    )
+    
+    st.subheader(f"📂 {kb_section}")
+    st.write("Access your reference files, links, media, and interactive guides here.")
+
+# --- MODULE 5: ABOUT US ---
+elif main_module == "5. About Us":
+    st.title("ℹ️ About District Training Center")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("🎯 Vision & Mission")
+        st.write("To empower healthcare professionals through world-class training, rigorous evaluation, and continuous capacity building.")
+        st.subheader("🏆 Success Milestones")
+        st.write("Tracking our achievements and impact across healthcare training programs.")
+    with col2:
+        st.subheader("🏢 DTT Profile")
+        st.write("District Training Team Profile and administrative structure.")
+        st.subheader("📞 Contact Info")
+        st.write("Get in touch with the DTC administration and training coordinators.")
