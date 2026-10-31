@@ -106,23 +106,22 @@ if main_module == "1. Training Summary":
 
         st.markdown("---")
 
-        # ------------------------------------------
+       # ------------------------------------------
         # FILTERS & MONTHLY ANALYTICS
         # ------------------------------------------
         col_f1, col_f2 = st.columns(2)
         with col_f1:
-            pools = ["All Pools"] + sorted(summary_df['Pool'].dropna().astype(str).unique().tolist()) if 'Pool' in summary_df.columns else ["All Pools"]
-            selected_pool = st.selectbox("Filter by Funding Pool", pools, key="summary_pool_filter")
+            allocations = ["All Fund Allocations"] + sorted(summary_df['Fund Allocation'].dropna().astype(str).unique().tolist()) if 'Fund Allocation' in summary_df.columns else ["All Fund Allocations"]
+            selected_allocation = st.selectbox("Filter by Fund Allocation", allocations, key="summary_allocation_filter")
         with col_f2:
             divisions = ["All Divisions"] + sorted(summary_df['Program Division'].dropna().astype(str).unique().tolist()) if 'Program Division' in summary_df.columns else ["All Divisions"]
             selected_div = st.selectbox("Filter by Program Division", divisions, key="summary_div_filter")
 
         filtered_summary = summary_df.copy()
-        if selected_pool != "All Pools":
-            filtered_summary = filtered_summary[filtered_summary['Pool'].astype(str) == selected_pool]
+        if selected_allocation != "All Fund Allocations":
+            filtered_summary = filtered_summary[filtered_summary['Fund Allocation'].astype(str) == selected_allocation]
         if selected_div != "All Divisions":
             filtered_summary = filtered_summary[filtered_summary['Program Division'].astype(str) == selected_div]
-
         st.markdown("### 📈 Monthly Training Execution Timeline")
         
         # Identify month columns (columns 7 through 18 usually represent the 12 months)
