@@ -36,17 +36,16 @@ if main_module == "1. Training Summary":
     st.title("📊 Training Summary & Physical Progress Dashboard")
     st.markdown("Comprehensive District Training Center (DTC) physical targets, monthly calendar execution, and achievement tracking.")
 
-    # Data Loading Strategy (Google Sheets with Local Excel Fallback)
+    # Data Loading Strategy (SMO_Database -> PHYSICAL worksheet)
     @st.cache_data(ttl=600)
     def load_training_summary_data():
         try:
             if client:
-                sh = client.open("DTT_Report_2025_26")
+                sh = client.open("SMO_Database")
                 ws = sh.worksheet("PHYSICAL")
                 raw_data = ws.get_all_values()
-                # Row 1 is header, Row 2 is monthly subheaders, Row 3+ is data
-                headers = raw_data[1]
-                data_rows = raw_data[3:] # Adjust based on exact row start
+                headers = raw_data[0] # Row 0 is header
+                data_rows = raw_data[1:] # Data starts from Row 1
                 summary_df = pd.DataFrame(data_rows, columns=headers)
                 return summary_df, "gspread"
         except Exception:
@@ -54,19 +53,9 @@ if main_module == "1. Training Summary":
         
         # Fallback to local Excel file
         try:
-            excel_path = "@DTT REPORT 2025-26 SUMMERY  (6).xlsx"
+            excel_path = "SMO_Database (1).xlsx"
             xls = pd.ExcelFile(excel_path)
-            # Read raw to construct clean columns
-            raw_df = pd.read_excel(xls, sheet_name="PHYSICAL", header=None)
-            headers = [
-                "New FMR", "Old FMR", "Particular", "Pool", "Program Division", 
-                "Fund Allocation", "Target", "Apr", "May", "Jun", "Jul", 
-                "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", 
-                "TOTAL", "PENDING", "Col22", "Col23", "Col24"
-            ]
-            summary_df = raw_df.iloc[3:75].copy() # slicing valid data rows
-            summary_df = summary_df.iloc[:, :21] # take first 21 relevant columns
-            summary_df.columns = headers[:21]
+            summary_df = pd.read_excel(xls, sheet_name="PHYSICAL", header=0)
             return summary_df, "excel"
         except Exception as e:
             st.error(f"Could not load Training Summary data source: {e}")
@@ -77,22 +66,32 @@ if main_module == "1. Training Summary":
     if summary_df is not None and not summary_df.empty:
         import plotly.express as px
 
-        # Clean data: drop rows where Particular is NaN or empty
+        # Clean data: drop rows where Particular is NaN, empty, or totals
         summary_df = summary_df.dropna(subset=['Particular'])
-        summary_df = summary_df[summary_df['Particular'] != 'TOTAL']
+        summary_df = summary_df[~summary_df['Particular'].astype(str).str.upper().isin(['TOTAL', 'NAN', ''])]
+
+        # Standardize column names (specifically the target column)
+        target_col_candidates = [c for c in summary_df.columns if 'Target' in str(c) or 'BATCHES' in str(c).upper()]
+        target_col = target_col_candidates[0] if target_col_candidates else summary_df.columns[6]
 
         # Ensure numeric columns are properly converted
-        numeric_cols = ['Target', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'TOTAL', 'PENDING']
-        for col in numeric_cols:
-            if col in summary_df.columns:
+        month_cols_to_check = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'TOTAL', 'PENDING', target_col]
+        for col in summary_df.columns:
+            # Check if column name matches any month or target/total/pending
+            if any(m in str(col) for m in ['2026', '2025', 'TOTAL', 'PENDING', 'Target', 'BATCHES']) or col in ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar']:
                 summary_df[col] = pd.to_numeric(summary_df[col], errors='coerce').fillna(0)
+
+        # Identify exact numeric target and summary columns
+        target_series = summary_df[target_col]
+        achieved_series = summary_df['TOTAL'] if 'TOTAL' in summary_df.columns else summary_df.iloc[:, -2]
+        pending_series = summary_df['PENDING'] if 'PENDING' in summary_df.columns else summary_df.iloc[:, -1]
 
         # ------------------------------------------
         # KPI METRICS BAR
         # ------------------------------------------
-        total_target = summary_df['Target'].sum() if 'Target' in summary_df.columns else 0
-        total_achieved = summary_df['TOTAL'].sum() if 'TOTAL' in summary_df.columns else 0
-        total_pending = summary_df['PENDING'].sum() if 'PENDING' in summary_df.columns else 0
+        total_target = target_series.sum()
+        total_achieved = achieved_series.sum()
+        total_pending = pending_series.sum()
         achievement_pct = (total_achieved / total_target * 100) if total_target > 0 else 0
 
         col_k1, col_k2, col_k3, col_k4 = st.columns(4)
@@ -112,35 +111,41 @@ if main_module == "1. Training Summary":
         # ------------------------------------------
         col_f1, col_f2 = st.columns(2)
         with col_f1:
-            pools = ["All Pools"] + sorted(summary_df['Pool'].dropna().unique().tolist()) if 'Pool' in summary_df.columns else ["All Pools"]
-            selected_pool = st.selectbox("Filter by Funding Pool", pools)
+            pools = ["All Pools"] + sorted(summary_df['Pool'].dropna().astype(str).unique().tolist()) if 'Pool' in summary_df.columns else ["All Pools"]
+            selected_pool = st.selectbox("Filter by Funding Pool", pools, key="summary_pool_filter")
         with col_f2:
-            divisions = ["All Divisions"] + sorted(summary_df['Program Division'].dropna().unique().tolist()) if 'Program Division' in summary_df.columns else ["All Divisions"]
-            selected_div = st.selectbox("Filter by Program Division", divisions)
+            divisions = ["All Divisions"] + sorted(summary_df['Program Division'].dropna().astype(str).unique().tolist()) if 'Program Division' in summary_df.columns else ["All Divisions"]
+            selected_div = st.selectbox("Filter by Program Division", divisions, key="summary_div_filter")
 
         filtered_summary = summary_df.copy()
         if selected_pool != "All Pools":
-            filtered_summary = filtered_summary[filtered_summary['Pool'] == selected_pool]
+            filtered_summary = filtered_summary[filtered_summary['Pool'].astype(str) == selected_pool]
         if selected_div != "All Divisions":
-            filtered_summary = filtered_summary[filtered_summary['Program Division'] == selected_div]
+            filtered_summary = filtered_summary[filtered_summary['Program Division'].astype(str) == selected_div]
 
-        st.markdown("### 📈 Monthly Training Execution Timeline (F.Y. 2025-26)")
+        st.markdown("### 📈 Monthly Training Execution Timeline")
         
-        months = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar']
-        monthly_totals = filtered_summary[months].sum().reset_index()
-        monthly_totals.columns = ['Month', 'Completed Batches']
+        # Identify month columns (columns 7 through 18 usually represent the 12 months)
+        month_cols = [c for c in filtered_summary.columns if any(str(m) in str(c) for m in ['2025', '2026', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar']) and c not in [target_col, 'TOTAL', 'PENDING']]
+        
+        if len(month_cols) >= 12:
+            month_cols = month_cols[:12] # Take first 12 calendar columns
+            monthly_totals = filtered_summary[month_cols].sum().reset_index()
+            monthly_totals.columns = ['Month', 'Completed Batches']
+            # Clean month labels if they are full dates
+            monthly_totals['Month'] = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'][:len(monthly_totals)]
 
-        fig_monthly = px.bar(
-            monthly_totals,
-            x='Month',
-            y='Completed Batches',
-            text='Completed Batches',
-            color='Completed Batches',
-            color_continuous_scale='Blues',
-            title="Batch Execution Progress Across Months"
-        )
-        fig_monthly.update_layout(template="plotly_white")
-        st.plotly_chart(fig_monthly, use_container_width=True)
+            fig_monthly = px.bar(
+                monthly_totals,
+                x='Month',
+                y='Completed Batches',
+                text='Completed Batches',
+                color='Completed Batches',
+                color_continuous_scale='Blues',
+                title="Batch Execution Progress Across Months"
+            )
+            fig_monthly.update_layout(template="plotly_white")
+            st.plotly_chart(fig_monthly, use_container_width=True)
 
         # ------------------------------------------
         # MASTER TABLE & DOWNLOAD
@@ -156,7 +161,7 @@ if main_module == "1. Training Summary":
             mime="text/csv"
         )
     else:
-        st.warning("⚠️ Training summary data not found. Please verify your Google Sheet `DTT_Report_2025_26` or upload the Excel report.")
+        st.warning("⚠️ Training summary data not found in worksheet `PHYSICAL` of `SMO_Database`.")
 # --- MODULE 2: CURRENT YEAR DATA ---
 elif main_module == "2. Current Year Data (26-27)":
     st.title("📅 Current Year Data (2026-27)")
