@@ -127,7 +127,6 @@ elif main_module == "3. Training Database":
                 try:
                     st.subheader("🌟 District Executive Summary")
                     
-                    # Safely slice only the first 9 rows (Talukas: BHESAN to VISAVADAR)
                     clean_master_df = master_df.iloc[0:9].copy()
                     
                     numeric_cols = [c for c in clean_master_df.columns if c not in ['SR NO', 'TALUKA']]
@@ -154,13 +153,14 @@ elif main_module == "3. Training Database":
                         district_totals = clean_master_df[training_cols].sum().reset_index()
                         district_totals.columns = ['Training Module', 'Completed Count']
                         
+                        # Fixed: color_continuous_scale (with underscore)
                         fig_bar = px.bar(
                             district_totals, 
                             x='Training Module', 
                             y='Completed Count',
                             text='Completed Count',
                             color='Completed Count',
-                            color_continuousScale='Viridis',
+                            color_continuous_scale='Viridis',
                             title="Total CHOs Completed per Training Module (District Level)"
                         )
                         fig_bar.update_layout(xaxis_tickangle=-45, template="plotly_white")
@@ -228,20 +228,21 @@ elif main_module == "3. Training Database":
 
                     valid_talukas_list = master_df.iloc[0:9]['TALUKA'].dropna().tolist()
 
+                    # Fixed: Added leading underscore (_src) so Streamlit doesn't try to hash the unhashable gspread object
                     @st.cache_data
-                    def load_all_chos(talukas, src, stype):
+                    def load_all_chos(talukas, _src, stype):
                         all_records = []
                         for tal in talukas:
                             try:
                                 if stype == "gspread":
-                                    ws = src.worksheet(tal)
+                                    ws = _src.worksheet(tal)
                                     vals = ws.get_all_values()
                                     if len(vals) > 2:
                                         t_df = pd.DataFrame(vals[2:], columns=vals[0])
                                         t_df['TALUKA'] = tal
                                         all_records.append(t_df)
                                 else:
-                                    t_raw = pd.read_excel(src, sheet_name=tal, header=None)
+                                    t_raw = pd.read_excel(_src, sheet_name=tal, header=None)
                                     if len(t_raw) > 2:
                                         t_df = t_raw.iloc[2:].copy()
                                         t_df.columns = t_raw.iloc[0].values
