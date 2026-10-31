@@ -299,7 +299,6 @@ elif main_module == "3. Training Database":
                     st.dataframe(filtered, use_container_width=True)
             except Exception:
                 st.warning(f"Worksheet '{db_category}' not found in your Google Sheet. Please add it!")
-
 # --- MODULE 4: KNOWLEDGE BANK ---
 elif main_module == "4. Knowledge Bank":
     st.title("📚 Knowledge Bank & Resources")
