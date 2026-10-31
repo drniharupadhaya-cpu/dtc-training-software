@@ -31,21 +31,132 @@ main_module = st.sidebar.selectbox(
     ["1. Training Summary", "2. Current Year Data (26-27)", "3. Training Database", "4. Knowledge Bank", "5. About Us"]
 )
 
-# --- MODULE 1: TRAINING SUMMARY ---
-if main_module == "1. Training Summary":
-    st.title("📊 Training Summary")
-    st.markdown("### Yearwise Training Performance")
-    st.info("Here you can analyze year-over-year training achievements pulled from your Google Sheet.")
-    
-    # Placeholder for pulling Yearwise data
-    if client:
+# --- MODULE 1: TRAINING SUMMARY (PHYSICAL & FINANCIAL TARGETS) ---
+elif main_module == "1. Training Summary":
+    st.title("📊 Training Summary & Physical Progress Dashboard")
+    st.markdown("Comprehensive District Training Center (DTC) physical targets, monthly calendar execution, and achievement tracking.")
+
+    # Data Loading Strategy (Google Sheets with Local Excel Fallback)
+    @st.cache_data(ttl=600)
+    def load_training_summary_data():
         try:
-            sh = client.open("DTT_Database")
-            ws = sh.worksheet("Yearwise_Performance")
-            data = pd.DataFrame(ws.get_all_records())
-            st.dataframe(data, use_container_width=True)
+            if client:
+                sh = client.open("DTT_Report_2025_26")
+                ws = sh.worksheet("PHYSICAL")
+                raw_data = ws.get_all_values()
+                # Row 1 is header, Row 2 is monthly subheaders, Row 3+ is data
+                headers = raw_data[1]
+                data_rows = raw_data[3:] # Adjust based on exact row start
+                summary_df = pd.DataFrame(data_rows, columns=headers)
+                return summary_df, "gspread"
         except Exception:
-            st.warning("Please create a worksheet named 'Yearwise_Performance' in your Google Sheet.")
+            pass
+        
+        # Fallback to local Excel file
+        try:
+            excel_path = "@DTT REPORT 2025-26 SUMMERY  (6).xlsx"
+            xls = pd.ExcelFile(excel_path)
+            # Read raw to construct clean columns
+            raw_df = pd.read_excel(xls, sheet_name="PHYSICAL", header=None)
+            headers = [
+                "New FMR", "Old FMR", "Particular", "Pool", "Program Division", 
+                "Fund Allocation", "Target", "Apr", "May", "Jun", "Jul", 
+                "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", 
+                "TOTAL", "PENDING", "Col22", "Col23", "Col24"
+            ]
+            summary_df = raw_df.iloc[3:75].copy() # slicing valid data rows
+            summary_df = summary_df.iloc[:, :21] # take first 21 relevant columns
+            summary_df.columns = headers[:21]
+            return summary_df, "excel"
+        except Exception as e:
+            st.error(f"Could not load Training Summary data source: {e}")
+            return None, None
+
+    summary_df, summary_source_type = load_training_summary_data()
+
+    if summary_df is not None and not summary_df.empty:
+        import plotly.express as px
+
+        # Clean data: drop rows where Particular is NaN or empty
+        summary_df = summary_df.dropna(subset=['Particular'])
+        summary_df = summary_df[summary_df['Particular'] != 'TOTAL']
+
+        # Ensure numeric columns are properly converted
+        numeric_cols = ['Target', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'TOTAL', 'PENDING']
+        for col in numeric_cols:
+            if col in summary_df.columns:
+                summary_df[col] = pd.to_numeric(summary_df[col], errors='coerce').fillna(0)
+
+        # ------------------------------------------
+        # KPI METRICS BAR
+        # ------------------------------------------
+        total_target = summary_df['Target'].sum() if 'Target' in summary_df.columns else 0
+        total_achieved = summary_df['TOTAL'].sum() if 'TOTAL' in summary_df.columns else 0
+        total_pending = summary_df['PENDING'].sum() if 'PENDING' in summary_df.columns else 0
+        achievement_pct = (total_achieved / total_target * 100) if total_target > 0 else 0
+
+        col_k1, col_k2, col_k3, col_k4 = st.columns(4)
+        with col_k1:
+            st.metric("Total Target Batches", int(total_target))
+        with col_k2:
+            st.metric("Total Achieved Batches", int(total_achieved))
+        with col_k3:
+            st.metric("Total Pending Batches", int(total_pending))
+        with col_k4:
+            st.metric("Achievement Rate", f"{achievement_pct:.1f}%")
+
+        st.markdown("---")
+
+        # ------------------------------------------
+        # FILTERS & MONTHLY ANALYTICS
+        # ------------------------------------------
+        col_f1, col_f2 = st.columns(2)
+        with col_f1:
+            pools = ["All Pools"] + sorted(summary_df['Pool'].dropna().unique().tolist()) if 'Pool' in summary_df.columns else ["All Pools"]
+            selected_pool = st.selectbox("Filter by Funding Pool", pools)
+        with col_f2:
+            divisions = ["All Divisions"] + sorted(summary_df['Program Division'].dropna().unique().tolist()) if 'Program Division' in summary_df.columns else ["All Divisions"]
+            selected_div = st.selectbox("Filter by Program Division", divisions)
+
+        filtered_summary = summary_df.copy()
+        if selected_pool != "All Pools":
+            filtered_summary = filtered_summary[filtered_summary['Pool'] == selected_pool]
+        if selected_div != "All Divisions":
+            filtered_summary = filtered_summary[filtered_summary['Program Division'] == selected_div]
+
+        st.markdown("### 📈 Monthly Training Execution Timeline (F.Y. 2025-26)")
+        
+        months = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar']
+        monthly_totals = filtered_summary[months].sum().reset_index()
+        monthly_totals.columns = ['Month', 'Completed Batches']
+
+        fig_monthly = px.bar(
+            monthly_totals,
+            x='Month',
+            y='Completed Batches',
+            text='Completed Batches',
+            color='Completed Batches',
+            color_continuous_scale='Blues',
+            title="Batch Execution Progress Across Months"
+        )
+        fig_monthly.update_layout(template="plotly_white")
+        st.plotly_chart(fig_monthly, use_container_width=True)
+
+        # ------------------------------------------
+        # MASTER TABLE & DOWNLOAD
+        # ------------------------------------------
+        st.markdown("### 📋 Detailed Training Physical Target & Progress Table")
+        st.dataframe(filtered_summary, use_container_width=True)
+
+        csv_summary = filtered_summary.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Download Training Summary Report (CSV)",
+            data=csv_summary,
+            file_name="DTT_Training_Summary_Report.csv",
+            mime="text/csv"
+        )
+    else:
+        st.warning("⚠️ Training summary data not found. Please verify your Google Sheet `DTT_Report_2025_26` or upload the Excel report.")
 
 # --- MODULE 2: CURRENT YEAR DATA ---
 elif main_module == "2. Current Year Data (26-27)":
