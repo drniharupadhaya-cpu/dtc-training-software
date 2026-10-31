@@ -88,14 +88,14 @@ elif main_module == "3. Training Database":
         st.markdown("### 🌟 CHO Training & District Analytics Dashboard")
         st.markdown("Comprehensive analytics and directory for Community Health Officer (CHO) trainings across Junagadh District.")
 
-        # Data Loading Strategy for CHO Database
+        # Data Loading Strategy for CHO Database (Cached master dataframe only)
         @st.cache_data(ttl=600)
-        def load_cho_training_data():
+        def load_master_dataframe():
             try:
                 if client:
                     sh = client.open("SMO_Database")
                     master_df = pd.DataFrame(sh.worksheet("MASTER").get_all_records())
-                    return sh, master_df, "gspread"
+                    return master_df, "gspread"
             except Exception:
                 pass
             
@@ -103,12 +103,12 @@ elif main_module == "3. Training Database":
                 excel_path = "SMO_Database.xlsx"
                 xls = pd.ExcelFile(excel_path)
                 master_df = pd.read_excel(xls, sheet_name="MASTER")
-                return xls, master_df, "excel"
+                return master_df, "excel"
             except Exception as e:
                 st.error(f"Could not load database source: {e}")
-                return None, None, None
+                return None, None
 
-        data_source, master_df, source_type = load_cho_training_data()
+        master_df, source_type = load_master_dataframe()
 
         if master_df is not None and not master_df.empty:
             import plotly.express as px
@@ -153,7 +153,6 @@ elif main_module == "3. Training Database":
                         district_totals = clean_master_df[training_cols].sum().reset_index()
                         district_totals.columns = ['Training Module', 'Completed Count']
                         
-                        # Fixed: color_continuous_scale (with underscore)
                         fig_bar = px.bar(
                             district_totals, 
                             x='Training Module', 
@@ -182,12 +181,15 @@ elif main_module == "3. Training Database":
                     selected_taluka = st.selectbox("Select Taluka for Deep Dive", valid_talukas_list, key="taluka_deep_dive_selectbox")
                     
                     if selected_taluka:
-                        if source_type == "gspread":
-                            ws_taluka = data_source.worksheet(selected_taluka)
+                        if source_type == "gspread" and client:
+                            # Re-open fresh gspread session to avoid expired session token errors
+                            sh = client.open("SMO_Database")
+                            ws_taluka = sh.worksheet(selected_taluka)
                             raw_data = ws_taluka.get_all_values()
                             taluka_df = pd.DataFrame(raw_data[2:], columns=raw_data[0])
                         else:
-                            taluka_raw = pd.read_excel(data_source, sheet_name=selected_taluka, header=None)
+                            excel_path = "SMO_Database.xlsx"
+                            taluka_raw = pd.read_excel(excel_path, sheet_name=selected_taluka, header=None)
                             headers = taluka_raw.iloc[0].values
                             taluka_df = taluka_raw.iloc[2:].copy()
                             taluka_df.columns = headers
@@ -228,21 +230,22 @@ elif main_module == "3. Training Database":
 
                     valid_talukas_list = master_df.iloc[0:9]['TALUKA'].dropna().tolist()
 
-                    # Fixed: Added leading underscore (_src) so Streamlit doesn't try to hash the unhashable gspread object
                     @st.cache_data
-                    def load_all_chos(talukas, _src, stype):
+                    def load_all_chos(talukas, stype):
                         all_records = []
                         for tal in talukas:
                             try:
-                                if stype == "gspread":
-                                    ws = _src.worksheet(tal)
+                                if stype == "gspread" and client:
+                                    sh_local = client.open("SMO_Database")
+                                    ws = sh_local.worksheet(tal)
                                     vals = ws.get_all_values()
                                     if len(vals) > 2:
                                         t_df = pd.DataFrame(vals[2:], columns=vals[0])
                                         t_df['TALUKA'] = tal
                                         all_records.append(t_df)
                                 else:
-                                    t_raw = pd.read_excel(_src, sheet_name=tal, header=None)
+                                    excel_path = "SMO_Database.xlsx"
+                                    t_raw = pd.read_excel(excel_path, sheet_name=tal, header=None)
                                     if len(t_raw) > 2:
                                         t_df = t_raw.iloc[2:].copy()
                                         t_df.columns = t_raw.iloc[0].values
@@ -254,7 +257,7 @@ elif main_module == "3. Training Database":
                             return pd.concat(all_records, ignore_index=True)
                         return pd.DataFrame()
 
-                    global_chos = load_all_chos(valid_talukas_list, data_source, source_type)
+                    global_chos = load_all_chos(valid_talukas_list, source_type)
 
                     if not global_chos.empty:
                         global_chos = global_chos.dropna(subset=['CHO NAME'])
