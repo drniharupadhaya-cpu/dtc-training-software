@@ -5,7 +5,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 # Page Config
 st.set_page_config(
-    page_title="District Training Center Software",
+    page_title="District Training Team Software",
     page_icon="🏛️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -25,7 +25,7 @@ def get_sheets_client():
 client = get_sheets_client()
 
 # Sidebar Navigation matching your CSV modules
-st.sidebar.title("🏛️ DTC Navigation")
+st.sidebar.title("🏛️ DTT Navigation")
 main_module = st.sidebar.selectbox(
     "Select Module", 
     ["1. Training Summary", "2. Current Year Data (26-27)", "3. Training Database", "4. Knowledge Bank", "5. About Us"]
@@ -40,7 +40,7 @@ if main_module == "1. Training Summary":
     # Placeholder for pulling Yearwise data
     if client:
         try:
-            sh = client.open("DTC_Database")
+            sh = client.open("DTT_Database")
             ws = sh.worksheet("Yearwise_Performance")
             data = pd.DataFrame(ws.get_all_records())
             st.dataframe(data, use_container_width=True)
@@ -84,7 +84,7 @@ elif main_module == "3. Training Database":
     st.markdown(f"### Viewing: {db_category}")
     if client:
         try:
-            sh = client.open("DTC_Database")
+            sh = client.open("DTT_Database")
             ws = sh.worksheet(db_category)
             data = pd.DataFrame(ws.get_all_records())
             st.dataframe(data, use_container_width=True)
@@ -123,4 +123,4 @@ elif main_module == "5. About Us":
         st.subheader("🏢 DTT Profile")
         st.write("District Training Team Profile and administrative structure.")
         st.subheader("📞 Contact Info")
-        st.write("Get in touch with the DTC administration and training coordinators.")
+        st.write("Get in touch with the DTT administration and training coordinators.")
