@@ -112,10 +112,6 @@ elif main_module == "3. Training Database":
         data_source, master_df, source_type = load_cho_training_data()
 
         if master_df is not None:
-            # Clean master df (keeping only valid taluka rows, dropping summary/pending rows for clean calc)
-            valid_talukas_df = master_df.dropna(subset=['TALUKA']).copy()
-            valid_talukas_df = valid_talukas_df[~valid_talukas_df['TALUKA'].isin(['TOTAL', 'TRAINING PENDING'])]
-
             # Sub-navigation tabs for CHO Database
             tab1, tab2, tab3 = st.tabs([
                 "📊 Master District Overview", 
@@ -129,8 +125,17 @@ elif main_module == "3. Training Database":
             with tab1:
                 st.subheader("🌟 District Executive Summary")
                 
-                total_aam = valid_talukas_df['AAM'].sum() if 'AAM' in valid_talukas_df.columns else 0
-                total_cho = valid_talukas_df['CHO FILLED'].sum() if 'CHO FILLED' in valid_talukas_df.columns else 0
+                # Safely slice only the first 9 rows (Talukas: BHESAN to VISAVADAR)
+                # This explicitly ignores the second "TRAINING PENDING" table lower in the sheet
+                clean_master_df = master_df.iloc[0:9].copy()
+                
+                # Explicitly convert all metric columns to numeric (coercing any text/NaN to 0)
+                numeric_cols = [c for c in clean_master_df.columns if c not in ['SR NO', 'TALUKA']]
+                for col in numeric_cols:
+                    clean_master_df[col] = pd.to_numeric(clean_master_df[col], errors='coerce').fillna(0)
+                
+                total_aam = clean_master_df['AAM'].sum() if 'AAM' in clean_master_df.columns else 0
+                total_cho = clean_master_df['CHO FILLED'].sum() if 'CHO FILLED' in clean_master_df.columns else 0
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -138,14 +143,15 @@ elif main_module == "3. Training Database":
                 with col2:
                     st.metric("Total CHOs Filled", int(total_cho))
                 with col3:
-                    training_cols = [c for c in valid_talukas_df.columns if c not in ['SR NO', 'TALUKA', 'AAM', 'CHO FILLED']]
-                    avg_completion = valid_talukas_df[training_cols].mean().mean()
+                    training_cols = [c for c in numeric_cols if c not in ['AAM', 'CHO FILLED']]
+                    avg_completion = clean_master_df[training_cols].mean().mean()
                     st.metric("Avg Module Completion", f"{avg_completion:.1f} CHOs/Taluka")
 
                 st.markdown("---")
                 st.markdown("### 📈 District-Wide Training Module Completion")
                 
-                district_totals = valid_talukas_df[training_cols].sum().reset_index()
+                # Aggregate training counts across district using clean numeric data
+                district_totals = clean_master_df[training_cols].sum().reset_index()
                 district_totals.columns = ['Training Module', 'Completed Count']
                 
                 import plotly.express as px
@@ -170,8 +176,8 @@ elif main_module == "3. Training Database":
             with tab2:
                 st.subheader("🏢 Taluka-Wise Performance Analytics")
                 
-                taluka_list = valid_talukas_df['TALUKA'].tolist()
-                selected_taluka = st.selectbox("Select Taluka for Deep Dive", taluka_list)
+                valid_talukas_list = master_df.iloc[0:9]['TALUKA'].dropna().tolist()
+                selected_taluka = st.selectbox("Select Taluka for Deep Dive", valid_talukas_list)
                 
                 if selected_taluka:
                     try:
@@ -218,6 +224,8 @@ elif main_module == "3. Training Database":
                 st.subheader("🔍 Global CHO Directory & Training Tracker")
                 st.markdown("Search across all talukas for specific CHOs, TMIS IDs, or check individual training completion statuses.")
 
+                valid_talukas_list = master_df.iloc[0:9]['TALUKA'].dropna().tolist()
+
                 @st.cache_data
                 def load_all_chos(talukas, src, stype):
                     all_records = []
@@ -243,7 +251,7 @@ elif main_module == "3. Training Database":
                         return pd.concat(all_records, ignore_index=True)
                     return pd.DataFrame()
 
-                global_chos = load_all_chos(taluka_list, data_source, source_type)
+                global_chos = load_all_chos(valid_talukas_list, data_source, source_type)
 
                 if not global_chos.empty:
                     global_chos = global_chos.dropna(subset=['CHO NAME'])
@@ -252,7 +260,7 @@ elif main_module == "3. Training Database":
                     with col_s1:
                         search_term = st.text_input("Search by CHO Name, TMIS ID, or PHC", "")
                     with col_s2:
-                        filter_taluka = st.selectbox("Filter by Taluka", ["All Talukas"] + taluka_list, key="cho_filter_taluka")
+                        filter_taluka = st.selectbox("Filter by Taluka", ["All Talukas"] + valid_talukas_list, key="cho_filter_taluka")
 
                     filtered_df = global_chos.copy()
                     if filter_taluka != "All Talukas":
@@ -292,13 +300,13 @@ elif main_module == "3. Training Database":
                 data = pd.DataFrame(ws.get_all_records())
                 st.dataframe(data, use_container_width=True)
                 
-                # Simple search filter
                 search_query = st.text_input(f"Search in {db_category}")
                 if search_query:
                     filtered = data[data.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)]
                     st.dataframe(filtered, use_container_width=True)
             except Exception:
                 st.warning(f"Worksheet '{db_category}' not found in your Google Sheet. Please add it!")
+                
 # --- MODULE 4: KNOWLEDGE BANK ---
 elif main_module == "4. Knowledge Bank":
     st.title("📚 Knowledge Bank & Resources")
