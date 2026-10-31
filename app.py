@@ -24,7 +24,7 @@ def get_sheets_client():
 
 client = get_sheets_client()
 
-# Sidebar Navigation matching your CSV modules
+# Sidebar Navigation matching your modules
 st.sidebar.title("🏛️ DTT Navigation")
 main_module = st.sidebar.selectbox(
     "Select Module", 
@@ -32,7 +32,7 @@ main_module = st.sidebar.selectbox(
 )
 
 # --- MODULE 1: TRAINING SUMMARY (PHYSICAL & FINANCIAL TARGETS) ---
-elif main_module == "1. Training Summary":
+if main_module == "1. Training Summary":
     st.title("📊 Training Summary & Physical Progress Dashboard")
     st.markdown("Comprehensive District Training Center (DTC) physical targets, monthly calendar execution, and achievement tracking.")
 
@@ -157,7 +157,6 @@ elif main_module == "1. Training Summary":
         )
     else:
         st.warning("⚠️ Training summary data not found. Please verify your Google Sheet `DTT_Report_2025_26` or upload the Excel report.")
-
 # --- MODULE 2: CURRENT YEAR DATA ---
 elif main_module == "2. Current Year Data (26-27)":
     st.title("📅 Current Year Data (2026-27)")
