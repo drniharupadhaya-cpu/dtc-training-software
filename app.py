@@ -88,7 +88,7 @@ elif main_module == "3. Training Database":
         st.markdown("### 🌟 CHO Training & District Analytics Dashboard")
         st.markdown("Comprehensive analytics and directory for Community Health Officer (CHO) trainings across Junagadh District.")
 
-        # Data Loading Strategy for CHO Database (Supports both Google Sheets and Local Excel Fallback)
+        # Data Loading Strategy for CHO Database
         @st.cache_data(ttl=600)
         def load_cho_training_data():
             try:
@@ -99,7 +99,6 @@ elif main_module == "3. Training Database":
             except Exception:
                 pass
             
-            # Fallback to local Excel file if gspread isn't configured or fails
             try:
                 excel_path = "SMO_Database.xlsx"
                 xls = pd.ExcelFile(excel_path)
@@ -111,7 +110,9 @@ elif main_module == "3. Training Database":
 
         data_source, master_df, source_type = load_cho_training_data()
 
-        if master_df is not None:
+        if master_df is not None and not master_df.empty:
+            import plotly.express as px
+
             # Sub-navigation tabs for CHO Database
             tab1, tab2, tab3 = st.tabs([
                 "📊 Master District Overview", 
@@ -123,64 +124,64 @@ elif main_module == "3. Training Database":
             # TAB 1: MASTER DISTRICT OVERVIEW
             # ------------------------------------------
             with tab1:
-                st.subheader("🌟 District Executive Summary")
-                
-                # Safely slice only the first 9 rows (Talukas: BHESAN to VISAVADAR)
-                # This explicitly ignores the second "TRAINING PENDING" table lower in the sheet
-                clean_master_df = master_df.iloc[0:9].copy()
-                
-                # Explicitly convert all metric columns to numeric (coercing any text/NaN to 0)
-                numeric_cols = [c for c in clean_master_df.columns if c not in ['SR NO', 'TALUKA']]
-                for col in numeric_cols:
-                    clean_master_df[col] = pd.to_numeric(clean_master_df[col], errors='coerce').fillna(0)
-                
-                total_aam = clean_master_df['AAM'].sum() if 'AAM' in clean_master_df.columns else 0
-                total_cho = clean_master_df['CHO FILLED'].sum() if 'CHO FILLED' in clean_master_df.columns else 0
-                
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.metric("Total AAM / HWCs", int(total_aam))
-                with col2:
-                    st.metric("Total CHOs Filled", int(total_cho))
-                with col3:
-                    training_cols = [c for c in numeric_cols if c not in ['AAM', 'CHO FILLED']]
-                    avg_completion = clean_master_df[training_cols].mean().mean()
-                    st.metric("Avg Module Completion", f"{avg_completion:.1f} CHOs/Taluka")
+                try:
+                    st.subheader("🌟 District Executive Summary")
+                    
+                    # Safely slice only the first 9 rows (Talukas: BHESAN to VISAVADAR)
+                    clean_master_df = master_df.iloc[0:9].copy()
+                    
+                    numeric_cols = [c for c in clean_master_df.columns if c not in ['SR NO', 'TALUKA']]
+                    for col in numeric_cols:
+                        clean_master_df[col] = pd.to_numeric(clean_master_df[col], errors='coerce').fillna(0)
+                    
+                    total_aam = clean_master_df['AAM'].sum() if 'AAM' in clean_master_df.columns else 0
+                    total_cho = clean_master_df['CHO FILLED'].sum() if 'CHO FILLED' in clean_master_df.columns else 0
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Total AAM / HWCs", int(total_aam))
+                    with col2:
+                        st.metric("Total CHOs Filled", int(total_cho))
+                    with col3:
+                        training_cols = [c for c in numeric_cols if c not in ['AAM', 'CHO FILLED']]
+                        avg_completion = clean_master_df[training_cols].mean().mean() if training_cols else 0
+                        st.metric("Avg Module Completion", f"{avg_completion:.1f} CHOs/Taluka")
 
-                st.markdown("---")
-                st.markdown("### 📈 District-Wide Training Module Completion")
-                
-                # Aggregate training counts across district using clean numeric data
-                district_totals = clean_master_df[training_cols].sum().reset_index()
-                district_totals.columns = ['Training Module', 'Completed Count']
-                
-                import plotly.express as px
-                fig_bar = px.bar(
-                    district_totals, 
-                    x='Training Module', 
-                    y='Completed Count',
-                    text='Completed Count',
-                    color='Completed Count',
-                    color_continuousScale='Viridis',
-                    title="Total CHOs Completed per Training Module (District Level)"
-                )
-                fig_bar.update_layout(xaxis_tickangle=-45, template="plotly_white")
-                st.plotly_chart(fig_bar, use_container_width=True)
+                    st.markdown("---")
+                    st.markdown("### 📈 District-Wide Training Module Completion")
+                    
+                    if training_cols:
+                        district_totals = clean_master_df[training_cols].sum().reset_index()
+                        district_totals.columns = ['Training Module', 'Completed Count']
+                        
+                        fig_bar = px.bar(
+                            district_totals, 
+                            x='Training Module', 
+                            y='Completed Count',
+                            text='Completed Count',
+                            color='Completed Count',
+                            color_continuousScale='Viridis',
+                            title="Total CHOs Completed per Training Module (District Level)"
+                        )
+                        fig_bar.update_layout(xaxis_tickangle=-45, template="plotly_white")
+                        st.plotly_chart(fig_bar, use_container_width=True)
 
-                st.markdown("### 📋 District Master Summary Table")
-                st.dataframe(master_df, use_container_width=True)
+                    st.markdown("### 📋 District Master Summary Table")
+                    st.dataframe(master_df, use_container_width=True)
+                except Exception as e:
+                    st.error(f"Error rendering Master Overview: {e}")
 
             # ------------------------------------------
             # TAB 2: TALUKA & PHC DEEP DIVE
             # ------------------------------------------
             with tab2:
-                st.subheader("🏢 Taluka-Wise Performance Analytics")
-                
-                valid_talukas_list = master_df.iloc[0:9]['TALUKA'].dropna().tolist()
-                selected_taluka = st.selectbox("Select Taluka for Deep Dive", valid_talukas_list)
-                
-                if selected_taluka:
-                    try:
+                try:
+                    st.subheader("🏢 Taluka-Wise Performance Analytics")
+                    
+                    valid_talukas_list = master_df.iloc[0:9]['TALUKA'].dropna().tolist()
+                    selected_taluka = st.selectbox("Select Taluka for Deep Dive", valid_talukas_list, key="taluka_deep_dive_selectbox")
+                    
+                    if selected_taluka:
                         if source_type == "gspread":
                             ws_taluka = data_source.worksheet(selected_taluka)
                             raw_data = ws_taluka.get_all_values()
@@ -196,7 +197,7 @@ elif main_module == "3. Training Database":
                         st.markdown(f"### 📍 Analytics for Taluka: **{selected_taluka}**")
                         
                         t_hwcs = len(taluka_df)
-                        t_chos = taluka_df['CHO NAME'].nunique()
+                        t_chos = taluka_df['CHO NAME'].nunique() if 'CHO NAME' in taluka_df.columns else 0
                         
                         col_t1, col_t2 = st.columns(2)
                         with col_t1:
@@ -214,77 +215,80 @@ elif main_module == "3. Training Database":
                         st.markdown(f"#### 📝 Detailed CHO Records for {selected_taluka}")
                         st.dataframe(taluka_df, use_container_width=True)
 
-                    except Exception as e:
-                        st.warning(f"Could not load data for Taluka '{selected_taluka}': {e}")
+                except Exception as e:
+                    st.error(f"Error rendering Taluka Deep Dive: {e}")
 
             # ------------------------------------------
             # TAB 3: CHO DIRECTORY & TRAINING SEARCH
             # ------------------------------------------
             with tab3:
-                st.subheader("🔍 Global CHO Directory & Training Tracker")
-                st.markdown("Search across all talukas for specific CHOs, TMIS IDs, or check individual training completion statuses.")
+                try:
+                    st.subheader("🔍 Global CHO Directory & Training Tracker")
+                    st.markdown("Search across all talukas for specific CHOs, TMIS IDs, or check individual training completion statuses.")
 
-                valid_talukas_list = master_df.iloc[0:9]['TALUKA'].dropna().tolist()
+                    valid_talukas_list = master_df.iloc[0:9]['TALUKA'].dropna().tolist()
 
-                @st.cache_data
-                def load_all_chos(talukas, src, stype):
-                    all_records = []
-                    for tal in talukas:
-                        try:
-                            if stype == "gspread":
-                                ws = src.worksheet(tal)
-                                vals = ws.get_all_values()
-                                if len(vals) > 2:
-                                    t_df = pd.DataFrame(vals[2:], columns=vals[0])
-                                    t_df['TALUKA'] = tal
-                                    all_records.append(t_df)
-                            else:
-                                t_raw = pd.read_excel(src, sheet_name=tal, header=None)
-                                if len(t_raw) > 2:
-                                    t_df = t_raw.iloc[2:].copy()
-                                    t_df.columns = t_raw.iloc[0].values
-                                    t_df['TALUKA'] = tal
-                                    all_records.append(t_df)
-                        except Exception:
-                            continue
-                    if all_records:
-                        return pd.concat(all_records, ignore_index=True)
-                    return pd.DataFrame()
+                    @st.cache_data
+                    def load_all_chos(talukas, src, stype):
+                        all_records = []
+                        for tal in talukas:
+                            try:
+                                if stype == "gspread":
+                                    ws = src.worksheet(tal)
+                                    vals = ws.get_all_values()
+                                    if len(vals) > 2:
+                                        t_df = pd.DataFrame(vals[2:], columns=vals[0])
+                                        t_df['TALUKA'] = tal
+                                        all_records.append(t_df)
+                                else:
+                                    t_raw = pd.read_excel(src, sheet_name=tal, header=None)
+                                    if len(t_raw) > 2:
+                                        t_df = t_raw.iloc[2:].copy()
+                                        t_df.columns = t_raw.iloc[0].values
+                                        t_df['TALUKA'] = tal
+                                        all_records.append(t_df)
+                            except Exception:
+                                continue
+                        if all_records:
+                            return pd.concat(all_records, ignore_index=True)
+                        return pd.DataFrame()
 
-                global_chos = load_all_chos(valid_talukas_list, data_source, source_type)
+                    global_chos = load_all_chos(valid_talukas_list, data_source, source_type)
 
-                if not global_chos.empty:
-                    global_chos = global_chos.dropna(subset=['CHO NAME'])
+                    if not global_chos.empty:
+                        global_chos = global_chos.dropna(subset=['CHO NAME'])
 
-                    col_s1, col_s2 = st.columns(2)
-                    with col_s1:
-                        search_term = st.text_input("Search by CHO Name, TMIS ID, or PHC", "")
-                    with col_s2:
-                        filter_taluka = st.selectbox("Filter by Taluka", ["All Talukas"] + valid_talukas_list, key="cho_filter_taluka")
+                        col_s1, col_s2 = st.columns(2)
+                        with col_s1:
+                            search_term = st.text_input("Search by CHO Name, TMIS ID, or PHC", "", key="global_cho_search")
+                        with col_s2:
+                            filter_taluka = st.selectbox("Filter by Taluka", ["All Talukas"] + valid_talukas_list, key="cho_filter_taluka_global")
 
-                    filtered_df = global_chos.copy()
-                    if filter_taluka != "All Talukas":
-                        filtered_df = filtered_df[filtered_df['TALUKA'] == filter_taluka]
+                        filtered_df = global_chos.copy()
+                        if filter_taluka != "All Talukas":
+                            filtered_df = filtered_df[filtered_df['TALUKA'] == filter_taluka]
 
-                    if search_term:
-                        filtered_df = filtered_df[
-                            filtered_df.astype(str).apply(
-                                lambda row: row.str.contains(search_term, case=False).any(), axis=1
-                            )
-                        ]
+                        if search_term:
+                            filtered_df = filtered_df[
+                                filtered_df.astype(str).apply(
+                                    lambda row: row.str.contains(search_term, case=False).any(), axis=1
+                                )
+                            ]
 
-                    st.markdown(f"**Showing {len(filtered_df)} matching records:**")
-                    st.dataframe(filtered_df, use_container_width=True)
-                    
-                    csv_data = filtered_df.to_csv(index=False).encode('utf-8')
-                    st.download_button(
-                        label="📥 Download Filtered CHO Training Report (CSV)",
-                        data=csv_data,
-                        file_name="CHO_Training_Filtered_Report.csv",
-                        mime="text/csv"
-                    )
-                else:
-                    st.info("No CHO line records found across taluka sheets.")
+                        st.markdown(f"**Showing {len(filtered_df)} matching records:**")
+                        st.dataframe(filtered_df, use_container_width=True)
+                        
+                        csv_data = filtered_df.to_csv(index=False).encode('utf-8')
+                        st.download_button(
+                            label="📥 Download Filtered CHO Training Report (CSV)",
+                            data=csv_data,
+                            file_name="CHO_Training_Filtered_Report.csv",
+                            mime="text/csv"
+                        )
+                    else:
+                        st.info("No CHO line records found across taluka sheets.")
+                except Exception as e:
+                    st.error(f"Error rendering CHO Directory: {e}")
         else:
             st.warning("⚠️ Master database sheet not found. Please verify your Google Sheet name or upload `SMO_Database.xlsx`.")
 
@@ -300,7 +304,7 @@ elif main_module == "3. Training Database":
                 data = pd.DataFrame(ws.get_all_records())
                 st.dataframe(data, use_container_width=True)
                 
-                search_query = st.text_input(f"Search in {db_category}")
+                search_query = st.text_input(f"Search in {db_category}", key="other_db_search")
                 if search_query:
                     filtered = data[data.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)]
                     st.dataframe(filtered, use_container_width=True)
