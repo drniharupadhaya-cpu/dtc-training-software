@@ -426,10 +426,10 @@ elif main_module == "3. Training Database":
         
         # Map dropdown selections to exact Google Sheet tab names
         sheet_mapping = {
-            "MBBS MO PHC Database": "MBBS_MO_PHC",
-            "AYUSH MO PHC Database": "AYUSH_MO_PHC",
-            "RBSK MO Database": "RBSK_MO",
-            "MBBS CHC MO Database": "MBBS_CHC_MO"
+            "MBBS MO PHC Database": "MBBS PHC MO",
+            "AYUSH MO PHC Database": "AYUSH MO PHC",
+            "RBSK MO Database": "RBSK MO",
+            "MBBS CHC MO Database": "MBBS CHC MO"
         }
         target_sheet = sheet_mapping[db_category]
         
