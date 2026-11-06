@@ -233,7 +233,7 @@ elif main_module == "3. Training Database":
 
         master_df, source_type = load_master_dataframe()
 
-       if master_df is not None and not master_df.empty:
+        if master_df is not None and not master_df.empty:
             import plotly.express as px
 
             # Sub-navigation tabs for CHO Database
