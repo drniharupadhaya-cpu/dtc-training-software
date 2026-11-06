@@ -195,10 +195,10 @@ elif main_module == "3. Training Database":
         "Select Personnel Database", 
         [
             "CHO Database", 
-            "MBBS MO PHC Database", 
-            "AYUSH MO PHC Database", 
-            "RBSK MO Database", 
-            "MBBS CHC MO Database", 
+            "MBBS PHC MO", 
+            "AYUSH MO PHC", 
+            "RBSK MO    ", 
+            "MBBS CHC MO", 
             "ANM Database", 
             "MPHW Database", 
             "ASHA Database"
