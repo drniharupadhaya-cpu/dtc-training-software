@@ -439,9 +439,30 @@ elif main_module == "3. Training Database":
         def load_dynamic_cadre_data(sheet_name):
             try:
                 if client:
-                    # Using the active SMO_Database where your tabs live
                     sh = client.open("SMO_Database") 
-                    df = pd.DataFrame(sh.worksheet(sheet_name).get_all_records())
+                    ws = sh.worksheet(sheet_name)
+                    
+                    # FIX: Use get_all_values instead of get_all_records to bypass empty header errors
+                    raw_data = ws.get_all_values()
+                    
+                    if not raw_data or len(raw_data) < 2:
+                        return pd.DataFrame()
+                        
+                    # Extract headers and clean up empty string duplicates
+                    headers = raw_data[0]
+                    clean_headers = []
+                    for i, h in enumerate(headers):
+                        if str(h).strip() == "":
+                            clean_headers.append(f"Unnamed_{i}")
+                        else:
+                            clean_headers.append(str(h).strip())
+                            
+                    # Create DataFrame manually
+                    df = pd.DataFrame(raw_data[1:], columns=clean_headers)
+                    
+                    # Drop columns that are completely empty/unnamed
+                    df = df.loc[:, ~df.columns.str.startswith('Unnamed_')]
+                    
                     return df
             except Exception as e:
                 st.error(f"Error loading '{sheet_name}' from Google Sheets: {e}")
@@ -604,15 +625,25 @@ elif main_module == "3. Training Database":
             try:
                 sh = client.open("SMO_Database") 
                 ws = sh.worksheet(db_category)
-                data = pd.DataFrame(ws.get_all_records())
+                
+                # Applying the same fix here for other DBs just in case!
+                raw_data = ws.get_all_values()
+                if raw_data and len(raw_data) >= 2:
+                    headers = raw_data[0]
+                    clean_headers = [str(h).strip() if str(h).strip() != "" else f"Unnamed_{i}" for i, h in enumerate(headers)]
+                    data = pd.DataFrame(raw_data[1:], columns=clean_headers)
+                    data = data.loc[:, ~data.columns.str.startswith('Unnamed_')]
+                else:
+                    data = pd.DataFrame()
+                    
                 st.dataframe(data, use_container_width=True)
                 
                 search_query = st.text_input(f"Search in {db_category}", key="other_db_search")
                 if search_query:
                     filtered = data[data.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)]
                     st.dataframe(filtered, use_container_width=True)
-            except Exception:
-                st.warning(f"Worksheet '{db_category}' not found in your Google Sheet. Please add it!")
+            except Exception as e:
+                st.warning(f"Worksheet '{db_category}' not found or error loading: {e}")
                 
 # --- MODULE 4: KNOWLEDGE BANK ---
 elif main_module == "4. Knowledge Bank":
