@@ -442,14 +442,22 @@ elif main_module == "3. Training Database":
                     sh = client.open("SMO_Database") 
                     ws = sh.worksheet(sheet_name)
                     
-                    # FIX: Use get_all_values instead of get_all_records to bypass empty header errors
+                    # FIX: Use get_all_values instead of get_all_records
                     raw_data = ws.get_all_values()
                     
                     if not raw_data or len(raw_data) < 2:
                         return pd.DataFrame()
                         
-                    # Extract headers and clean up empty string duplicates
-                    headers = raw_data[0]
+                    # DYNAMIC HEADER DETECTION: Find the row that actually contains the headers
+                    header_idx = 0
+                    for i, row in enumerate(raw_data):
+                        # Convert row to uppercase strings for safe checking
+                        row_upper = [str(cell).strip().upper() for cell in row]
+                        if 'NAME OF M.O.' in row_upper or 'SR NO' in row_upper:
+                            header_idx = i
+                            break
+                            
+                    headers = raw_data[header_idx]
                     clean_headers = []
                     for i, h in enumerate(headers):
                         if str(h).strip() == "":
@@ -457,8 +465,8 @@ elif main_module == "3. Training Database":
                         else:
                             clean_headers.append(str(h).strip())
                             
-                    # Create DataFrame manually
-                    df = pd.DataFrame(raw_data[1:], columns=clean_headers)
+                    # Create DataFrame starting from the row AFTER the headers
+                    df = pd.DataFrame(raw_data[header_idx+1:], columns=clean_headers)
                     
                     # Drop columns that are completely empty/unnamed
                     df = df.loc[:, ~df.columns.str.startswith('Unnamed_')]
@@ -623,19 +631,10 @@ elif main_module == "3. Training Database":
         st.markdown(f"### Viewing: {db_category}")
         if client:
             try:
-                sh = client.open("SMO_Database") 
+                # Reverted this back to DTT_Database for ANM, MPHW, ASHA cadres
+                sh = client.open("DTT_Database") 
                 ws = sh.worksheet(db_category)
-                
-                # Applying the same fix here for other DBs just in case!
-                raw_data = ws.get_all_values()
-                if raw_data and len(raw_data) >= 2:
-                    headers = raw_data[0]
-                    clean_headers = [str(h).strip() if str(h).strip() != "" else f"Unnamed_{i}" for i, h in enumerate(headers)]
-                    data = pd.DataFrame(raw_data[1:], columns=clean_headers)
-                    data = data.loc[:, ~data.columns.str.startswith('Unnamed_')]
-                else:
-                    data = pd.DataFrame()
-                    
+                data = pd.DataFrame(ws.get_all_records())
                 st.dataframe(data, use_container_width=True)
                 
                 search_query = st.text_input(f"Search in {db_category}", key="other_db_search")
@@ -643,7 +642,7 @@ elif main_module == "3. Training Database":
                     filtered = data[data.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)]
                     st.dataframe(filtered, use_container_width=True)
             except Exception as e:
-                st.warning(f"Worksheet '{db_category}' not found or error loading: {e}")
+                st.warning(f"Worksheet '{db_category}' not found in DTT_Database. Please add it!")
                 
 # --- MODULE 4: KNOWLEDGE BANK ---
 elif main_module == "4. Knowledge Bank":
