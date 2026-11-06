@@ -190,7 +190,7 @@ elif main_module == "2. Current Year Data (26-27)":
 elif main_module == "3. Training Database":
     st.title("🗄️ Training Database (Directory & Analytics)")
     
-    # Updated Selectbox with the new Cadres
+    # Selectbox with exact string names
     db_category = st.selectbox(
         "Select Personnel Database", 
         [
@@ -305,7 +305,6 @@ elif main_module == "3. Training Database":
                     
                     if selected_taluka:
                         if source_type == "gspread" and client:
-                            # Re-open fresh gspread session to avoid expired session token errors
                             sh = client.open("SMO_Database")
                             ws_taluka = sh.worksheet(selected_taluka)
                             raw_data = ws_taluka.get_all_values()
@@ -424,13 +423,14 @@ elif main_module == "3. Training Database":
     # ==========================================
     elif db_category in ["MBBS MO PHC Database", "AYUSH MO PHC Database", "RBSK MO Database", "MBBS CHC MO Database"]:
         
-        # Map dropdown selections to exact Google Sheet tab names
+        # EXACT string mapping to your actual Google Sheet Tab Names
         sheet_mapping = {
             "MBBS MO PHC Database": "MBBS PHC MO",
             "AYUSH MO PHC Database": "AYUSH MO PHC",
             "RBSK MO Database": "RBSK MO",
             "MBBS CHC MO Database": "MBBS CHC MO"
         }
+        
         target_sheet = sheet_mapping[db_category]
         
         st.markdown(f"### 🩺 {db_category.replace(' Database', '')} Analytics Dashboard")
@@ -439,12 +439,12 @@ elif main_module == "3. Training Database":
         def load_dynamic_cadre_data(sheet_name):
             try:
                 if client:
-                    # Using the @MO TRAINING DATABASE file
-                    sh = client.open("@MO TRAINING DATABASE") 
+                    # Using the active SMO_Database where your tabs live
+                    sh = client.open("SMO_Database") 
                     df = pd.DataFrame(sh.worksheet(sheet_name).get_all_records())
                     return df
             except Exception as e:
-                st.error(f"Error loading {sheet_name} from Google Sheets: {e}")
+                st.error(f"Error loading '{sheet_name}' from Google Sheets: {e}")
                 return pd.DataFrame()
 
         df = load_dynamic_cadre_data(target_sheet)
@@ -454,17 +454,18 @@ elif main_module == "3. Training Database":
             import numpy as np
 
             # --- DATA CLEANING & CLASSIFICATION ---
-            # Define known demographic columns (everything else is treated as a training module)
-            demographic_cols = ['SR NO', 'TALUKA', 'FACILITY TYPE', 'FACILITY NAME', 'NAME OF M.O.', 'TMIS ID', 'STATUS']
+            demographic_cols = ['SR NO', 'TALUKA', 'PHC', 'FACILITY TYPE', 'FACILITY NAME', 'NAME OF M.O.', 'TMIS ID', 'STATUS', 'REGULER / BONDED/ CONTRAVTUAL']
             existing_demo_cols = [c for c in demographic_cols if c in df.columns]
             training_cols = [c for c in df.columns if c not in demographic_cols and c.strip() != ""]
 
-            # Convert Y/N in training columns to 1/0 for math aggregation
+            # Standardize status column name if it exists as REGULER / BONDED/ CONTRAVTUAL
+            if 'REGULER / BONDED/ CONTRAVTUAL' in df.columns:
+                df['STATUS'] = df['REGULER / BONDED/ CONTRAVTUAL']
+
             calc_df = df.copy()
             for col in training_cols:
                 calc_df[col] = calc_df[col].astype(str).str.upper().map({'Y': 1, 'N': 0}).fillna(0)
 
-            # Drop completely empty rows
             df = df.dropna(subset=['NAME OF M.O.'], how='all')
             calc_df = calc_df.dropna(subset=['NAME OF M.O.'], how='all')
 
@@ -522,7 +523,6 @@ elif main_module == "3. Training Database":
                     valid_talukas = ["All Talukas"] + sorted([t for t in df['TALUKA'].unique() if str(t).strip() != ""])
                     selected_taluka = st.selectbox("Select Taluka for Deep Dive", valid_talukas, key=f"taluka_dd_{target_sheet}")
                     
-                    # Filter logic
                     if selected_taluka == "All Talukas":
                         t_df = df.copy()
                         t_calc_df = calc_df.copy()
@@ -602,7 +602,7 @@ elif main_module == "3. Training Database":
         st.markdown(f"### Viewing: {db_category}")
         if client:
             try:
-                sh = client.open("DTT_Database") # Adjust if these are moved to @MO TRAINING DATABASE
+                sh = client.open("SMO_Database") 
                 ws = sh.worksheet(db_category)
                 data = pd.DataFrame(ws.get_all_records())
                 st.dataframe(data, use_container_width=True)
