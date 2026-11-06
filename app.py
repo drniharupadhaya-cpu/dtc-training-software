@@ -646,15 +646,96 @@ elif main_module == "3. Training Database":
                 
 # --- MODULE 4: KNOWLEDGE BANK ---
 elif main_module == "4. Knowledge Bank":
-    st.title("📚 Knowledge Bank & Resources")
+    st.title("📚 Knowledge Bank & Training Resource Repository")
+    st.markdown("Explore district training materials, guidelines, operational modules, and multi-tier cascading resources.")
+
+    # Master Knowledge Bank Hierarchy derived from Training Material Data
+    kb_hierarchy = {
+        "NVBDCP (Vector Borne Diseases)": ["MALARIA", "DENGUE", "CHICKEN GUNIA", "FILERIA"],
+        "Maternal Health": ["SBA", "DAKSHTA training"],
+        "Child Health": [
+            "RBSK - 5 DAYS", "MO DELIVERY POINT RBSK", "RBSK REFRESHER ANM", 
+            "NSSK", "SAANS", "IMNCI", "IYCF", "IMMUNIZATION", "HBYC", "KMC", "AEFI"
+        ],
+        "Adolescent Health": ["AFHS", "PEER EDUCTER", "NODAL TEACHER"],
+        "FP / Reproductive Health": ["RTI/STI", "IUCD+ PPIUCD", "NEW CONTRACEPTIVES", "FP LIMS"],
+        "NCD (Non-Communicable Diseases)": ["CANCER SCREENING", "DIABETES", "HYPERTENSION", "NMHP"],
+        "OEEE (Eye, Ear, Nose, Oral, Emergency)": ["ORAL", "EYE", "ENT", "EMERGENCY"],
+        "EPMNS & Elderly Care": ["NPHCE", "ELDERLY CARE", "PALLIATIVE CARE", "MENTAL HELATH AND NEUROLOGICAL SUBSTANCE"],
+        "Nutrition": ["ANEMIA MUKT ABHIYAN", "NATIONAL DEWORMING DAY", "EAT RIGHT TOOL KIT", "SAM"],
+        "Monitoring & Evaluation": ["SATHI", "HMIS"],
+        "Quality Assurance": ["NQAS", "KAYAKLP", "PMJAY", "ABDM"],
+        "NTEP & National Programs": [
+            "NVBDCP", "IHIP", "NLEP", "NTCP", "NPCCHH", "NVHCP", "NACP", "NRCP", "NPPC", 
+            "JAS", "SNACK BITE", "INFECTION CONTROL"
+        ],
+        "IHIP Protocols": ["IHIP-P", "IHIP-L", "IHIP-S", "EPIDEMIC RESPONSE"],
+        "Tuberculosis Sub-Divisions": ["PULMONERY TB", "EXTRAPUMONARY TB"],
+        "Infection Control & Bio-Waste": [
+            "HAND HEIGINE", "PPE KITS DOFFING DONNING", "CLANING", "STERILISATION", "WASTE MANGEMENT"
+        ]
+    }
+
+    # Layout: Two-column cascade drill-down
+    col_filter1, col_filter2 = st.columns(2)
     
-    kb_section = st.selectbox(
-        "Select Resource Category",
-        ["Prayers", "Training Materials (PDF/PPT/Videos)", "Pre/Post Test Forms", "Feedback Forms", "Field Evaluation Forms", "Innovations", "Games", "Govt Schemes"]
-    )
+    with col_filter1:
+        selected_category = st.selectbox("📂 Select Primary Training Domain", list(kb_hierarchy.keys()))
+        
+    with col_filter2:
+        sub_modules = kb_hierarchy.get(selected_category, ["General Resources"])
+        selected_sub_module = st.selectbox("📑 Select Cascading Training Module", sub_modules)
+
+    st.markdown("---")
     
-    st.subheader(f"📂 {kb_section}")
-    st.write("Access your reference files, links, media, and interactive guides here.")
+    # Header Banner for selected training cascade
+    st.subheader(f"🎯 Training Resource Hub: **{selected_sub_module}**")
+    st.markdown(f"*Parent Domain:* `{selected_category}`")
+
+    # Interactive Resource Tabs for the selected sub-module
+    res_tab1, res_tab2, res_tab3, res_tab4 = st.tabs([
+        "📖 Guidelines & Manuals (PDF)", 
+        "📊 Training Slide Decks (PPTX)", 
+        "🎥 Demonstration & Training Videos", 
+        "📝 Checklists & Pre/Post Tests"
+    ])
+
+    with res_tab1:
+        st.markdown(f"#### Official Guidelines for {selected_sub_module}")
+        st.info(f"Standard Operating Procedures (SOPs) and National Guidelines for {selected_sub_module} issued by MoHFW & State Health Department.")
+        
+        # Mock file download card
+        st.download_button(
+            label=f"📥 Download {selected_sub_module} Official Guideline (PDF)",
+            data=b"Mock PDF Content for Training Material",
+            file_name=f"{selected_sub_module.replace(' ', '_')}_Guideline.pdf",
+            mime="application/pdf"
+        )
+
+    with res_tab2:
+        st.markdown(f"#### District Training Presentations")
+        st.write("Train-the-Trainer (ToT) slide decks used for district-level rollout and capacity building.")
+        st.download_button(
+            label=f"📥 Download {selected_sub_module} Master Presentation (PPTX)",
+            data=b"Mock PPTX Content",
+            file_name=f"{selected_sub_module.replace(' ', '_')}_Presentation.pptx",
+            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        )
+
+    with res_tab3:
+        st.markdown(f"#### Video Resources & Skill Station Walkthroughs")
+        st.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ") # Placeholder tutorial link
+        st.caption(f"Official Ministry video tutorial covering practical clinical/field protocols for {selected_sub_module}.")
+
+    with res_tab4:
+        st.markdown(f"#### Assessment Tools & Evaluation Forms")
+        st.write("Pre-test and Post-test question banks, validation check-sheets, and monitoring feedback forms.")
+        
+        col_form1, col_form2 = st.columns(2)
+        with col_form1:
+            st.button(f"📋 Generate Pre/Post Test (Google Form Link)", key=f"test_{selected_sub_module}")
+        with col_form2:
+            st.button(f"📊 Download Field Evaluation Sheet (Excel)", key=f"eval_{selected_sub_module}")
 
 # --- MODULE 5: ABOUT US ---
 elif main_module == "5. About Us":
