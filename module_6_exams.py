@@ -4,30 +4,32 @@ import plotly.express as px
 import json
 import os
 
-@st.cache_data
 def load_question_bank(bank_name):
     # Mapping friendly dropdown names to your JSON filenames
     file_mapping = {
         "SAM Training Question Bank": "SAM_Question_Bank.json",
-        # As you add more JSON files later, add them here!
-        # "Anemia Mukt Bharat (AMB)": "AMB_Question_Bank.json",
+        "Anemia Mukt Bharat (AMB)": "AMB_Question_Bank.json",
     }
     
     filename = file_mapping.get(bank_name)
     if not filename:
+        st.warning(f"No filename mapped for: {bank_name}")
         return None
         
-    # Check both root folder and 'question_banks' folder for flexibility
+    # Check both root folder and 'question_banks' folder
     paths_to_try = [filename, os.path.join("question_banks", filename)]
     
     for filepath in paths_to_try:
         if os.path.exists(filepath):
             try:
                 with open(filepath, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except Exception:
-                continue
+                    data = json.load(f)
+                    return data
+            except Exception as e:
+                st.error(f"Error reading {filepath}: {e}")
+                return None
                 
+    st.error(f"File not found in paths: {paths_to_try}")
     return None
 
 def render_mock_exams_module():
@@ -102,9 +104,8 @@ def render_mock_exams_module():
                         prefix = "✅ **[CORRECT]**" if opt_key == item['answer'] else "•"
                         st.markdown(f"{prefix} **{opt_key})** {opt_val}")
     else:
-        # Placeholder message for modules whose JSON files aren't uploaded yet
         with q_tab1:
-            st.info(f"📌 **{selected_bank}** JSON file is pending upload. Select **'SAM Training Question Bank'** from the dropdown above to test the fully interactive quiz right now!")
+            st.info(f"📌 **{selected_bank}** JSON file is pending upload or not found in the repository root/question_banks folder.")
         with q_tab2:
             st.info(f"📌 Question bank and answer key for **{selected_bank}** will appear here once uploaded.")
 
