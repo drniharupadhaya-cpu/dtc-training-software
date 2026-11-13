@@ -9,6 +9,13 @@ def load_question_bank(bank_name):
     file_mapping = {
         "SAM Training Question Bank": "SAM_Question_Bank.json",
         "Anemia Mukt Bharat (AMB)": "AMB_Question_Bank.json",
+        "ASHA & ASHA Facilitator": "ASHA_Question_Bank.json",
+        "National Leprosy Eradication (NLEP)": "Leprosy_Question_Bank.json",
+        "NTEP (TB Elimination)": "NTEP_Question_Bank.json",
+        "DSO Surveillance & Outbreaks": "DSO_Question_Bank.json",
+        "Family Planning (FP) Protocols": "FP_Question_Bank.json",
+        "Immunization Training": "Immunization_Question_Bank.json",
+        "KMC & Breastfeeding (B.F.)": "KMC_BF_Question_Bank.json"
     }
     
     filename = file_mapping.get(bank_name)
