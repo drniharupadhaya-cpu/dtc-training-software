@@ -1,0 +1,102 @@
+[
+  {
+    "q": "6 માસ થી 59 માસ ના બાળક નું નોર્મલ HB (g /dl ) કેટલું હોવું જોઈએ?",
+    "options": {
+      "અ": "11.00",
+      "બ": "12.00",
+      "ક": "13.00",
+      "ડ": "11.5"
+    },
+    "answer": "અ"
+  },
+  {
+    "q": "5વર્ષ થી 11 વર્ષ ના બાળકોના નોર્મલ HB (g /dl ) કેટલું હોવું જોઈએ?",
+    "options": {
+      "અ": "11.00",
+      "બ": "12.00",
+      "ક": "13.00",
+      "ડ": "11.5"
+    },
+    "answer": "અ"
+  },
+  {
+    "q": "11 થી 14 વર્ષ ના બાળકોના નોર્મલ HB (g /dl ) કેટલું હોવું જોઈએ?",
+    "options": {
+      "અ": "11.00",
+      "બ": "12.00",
+      "ક": "13.00",
+      "ડ": "11.5"
+    },
+    "answer": "બ"
+  },
+  {
+    "q": "15 વર્ષ અને તેનાથી ઉપર ના ઉમર ના બહેનોનું નોર્મલ HB (g /dl ) કેટલું હોવું જોઈએ?",
+    "options": {
+      "અ": "11.00",
+      "બ": "12.00",
+      "ક": "13.00",
+      "ડ": "11.5"
+    },
+    "answer": "બ"
+  },
+  {
+    "q": "સગર્ભા બહેનોનું નોર્મલ HB (g /dl ) કેટલું હોવું જોઈએ?",
+    "options": {
+      "અ": "11.00",
+      "બ": "12.00",
+      "ક": "13.00",
+      "ડ": "11.5"
+    },
+    "answer": "અ"
+  },
+  {
+    "q": "15 વર્ષ અને તેનાથી ઉપર ના ઉમર ના પુરૂષોનું નોર્મલ HB (g /dl ) કેટલું હોવું જોઈએ?",
+    "options": {
+      "અ": "11.00",
+      "બ": "12.00",
+      "ક": "13.00",
+      "ડ": "11.5"
+    },
+    "answer": "ક"
+  },
+  {
+    "q": "6 માસ થી 59 માસના બાળકોને Iron Folic ACID Prophylactic dose અને Regime?",
+    "options": {
+      "અ": "અઠવાડીયામાં એક વખત 1 ML Iron Folic ACID Syrup",
+      "બ": "અઠવાડીયામાં બે વખત 1 ML Iron Folic ACID Syrup",
+      "ક": "અઠવાડીયામાં ત્રણ વખત 1 ML Iron Folic ACID Syrup",
+      "ડ": "ઉપર માંથી એક પણ નહી."
+    },
+    "answer": "બ"
+  },
+  {
+    "q": "5 માસ થી 9 વર્ષ ની વયના બાળકોને Iron Folic ACID (pink) Prophylactic dose અને Regime?",
+    "options": {
+      "અ": "અઠવાડીયામાં 1 TABLET Iron Folic ACID (PINK)",
+      "બ": "અઠવાડીયામાં 2 TABLET Iron Folic ACID (PINK)",
+      "ક": "અઠવાડીયામાં 3 TABLET Iron Folic ACID (PINK)",
+      "ડ": "ઉપર માંથી એક પણ નહી."
+    },
+    "answer": "અ"
+  },
+  {
+    "q": "10 માસ થી 19 વર્ષ ની વયના બાળકોને Iron Folic ACID (blue) Prophylactic dose અને Regime?",
+    "options": {
+      "અ": "અઠવાડીયામાં 1 TABLET Iron Folic ACID (BLUE)",
+      "બ": "અઠવાડીયામાં 2 TABLET Iron Folic ACID (BLUE)",
+      "ક": "અઠવાડીયામાં 3 TABLET Iron Folic ACID (BLUE)",
+      "ડ": "ઉપર માંથી એક પણ નહી."
+    },
+    "answer": "અ"
+  },
+  {
+    "q": "પ્રજનન વય ના બહેનો (WRA) 20 થી 49 Iron Folic ACID (RED) Prophylactic dose અને Regime?",
+    "options": {
+      "અ": "અઠવાડીયામાં 1 TABLET Iron Folic ACID (RED)",
+      "બ": "અઠવાડીયામાં 2 TABLET Iron Folic ACID (RED)",
+      "ક": "અઠવાડીયામાં 3 TABLET Iron Folic ACID (RED)",
+      "ડ": "ઉપર માંથી એક પણ નહી."
+    },
+    "answer": "અ"
+  }
+]
