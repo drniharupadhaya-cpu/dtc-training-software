@@ -61,20 +61,20 @@ PRE_POST_TESTS = [
     {
         "sr_no": 3,
         "name": "એન.એસ.એસ.કે. તાલીમ પ્રશ્નોત્તરી (NSSK)",
-        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSf1qUJglb4jsQv6DpCw0j4kHM1yMF4pC6sxOb91SUXSxyA/viewform?usp=sf_link",
-        "sheet_url": "https://docs.google.com/spreadsheets/d/1hfb0McKFbAKkpi8GigpLqqRBdZeLib3FplBwNZC8ltI/edit?usp=sharing"
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSf_1qUJgIb4jsQv6D_pCw0j4kHM1yMF4pC6sxOb9l_SUXSxyA/viewform",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1hfb0McKFbAKkpi8GigpLqqRBdZeLib3FpIBwNZC8ltI/edit?gid=268850596#gid=268850596"
     },
     {
         "sr_no": 4,
         "name": "ઈમ્યુનાઈઝેશન તાલીમ પ્રશ્નોત્તરી (Immunization)",
-        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSd9UZamTZIDDN6S1T2TFtYyg4a94wNJav-kYbNdsOPLLDA/viewform?usp=sf_link",
-        "sheet_url": "https://docs.google.com/spreadsheets/d/1RAgqykZel6xpTrDhgsB9kG623CHHa3F-sOoleN1F02A/edit?usp=sharing"
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSd9UZamTZIDDN6S1T2TFtYyD9kG6_23CHHa3F-sOoleN1F02A/viewform",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1RAgqykZel6xpTrDhgsBq4a94wN_Jav-kYbNdsOPLLDA/edit?gid=167575404#gid=167575404"
     },
     {
         "sr_no": 5,
         "name": "ઈન્જેક્ટેબલ એન્ડ કોન્ટ્રાસેપ્ટીવ તાલીમ (Injectable & Contraceptive)",
-        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSdITZMgMSXSR4jyvZc858Wmw4QfSZQSN2eySdZuWKRnAwp5g/viewform?usp=sf_link",
-        "sheet_url": "https://docs.google.com/spreadsheets/d/1wPOtS6vDjBTsUJj7lUkNDIaWRmFBE7JF1gh0aXUoJs/edit?usp=sharing"
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSdlTZMgMSXSR4jyvZc858Wmw4_QfSZQSN2eySdZuWKRnAwp5g/viewform",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1wPOtS6vDjBTsUJj7lUkNDIaWRmFBE7JF1_gh0aXUoJs/edit?gid=1762402621#gid=1762402621"
     },
     {
         "sr_no": 6,
