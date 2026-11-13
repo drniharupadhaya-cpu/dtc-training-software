@@ -49,8 +49,8 @@ PRE_POST_TESTS = [
     {
         "sr_no": 1,
         "name": "બાયો મેડિકલ વેસ્ટ મેનેજમેન્ટ તાલીમ પ્રશ્નોત્તરી (Biomedical Waste Management)",
-        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLScRzh5GyoFQCEg3eqfyyRECR3o-fLzQ5ND-A6pEGs1wuN9w/viewform?usp=sf_link",
-        "sheet_url": "https://docs.google.com/spreadsheets/d/1D5pWTNRPunYf7mLyPSnl9gmsPNUxEHoFNIcGeu714UA/edit?usp=sharing"
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLScRzh5GyoFQCEg3e_qfyyRECR3o-fLzQ5ND-A6pEGs1_wuN9w/viewform",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1D5pWTNRPunYf7mLyPSnl9gmsPNUxEHoFNlcGeu7l4UA/edit?gid=576032928#gid=576032928"
     },
     {
         "sr_no": 2,
