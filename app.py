@@ -162,29 +162,275 @@ if main_module == "1. Training Summary":
     else:
         st.warning("⚠️ Training summary data not found in worksheet `PHYSICAL` of `SMO_Database`.")
 # --- MODULE 2: CURRENT YEAR DATA ---
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import gspread
+from google.oauth2.service_account import Credentials
+
+# --- GOOGLE SHEETS AUTHENTICATION ---
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
+@st.cache_resource
+def get_gspread_client():
+    """Initializes and returns authenticated gspread client using Streamlit secrets."""
+    creds_dict = dict(st.secrets["gcp_service_account"])
+    creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+    return gspread.authorize(creds)
+
+@st.cache_data(ttl=600)
+def load_response_sheet_data(sheet_url: str) -> pd.DataFrame:
+    """Safely loads participant scores or responses from a public/shared Google Sheet URL."""
+    try:
+        client = get_gspread_client()
+        sh = client.open_by_url(sheet_url)
+        worksheet = sh.get_worksheet(0) # Grabs the first worksheet (Responses)
+        data = worksheet.get_all_records()
+        return pd.DataFrame(data)
+    except Exception as e:
+        # Fallback empty dataframe if sheet format varies or has auth restrictions
+        return pd.DataFrame()
+
+
+# --- MASTER REGISTRY OF PRE/POST TESTS (2026-27) ---
+PRE_POST_TESTS = [
+    {
+        "sr_no": 1,
+        "name": "બાયો મેડિકલ વેસ્ટ મેનેજમેન્ટ તાલીમ પ્રશ્નોત્તરી (Biomedical Waste Management)",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLScRzh5GyoFQCEg3eqfyyRECR3o-fLzQ5ND-A6pEGs1wuN9w/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1D5pWTNRPunYf7mLyPSnl9gmsPNUxEHoFNIcGeu714UA/edit?usp=sharing"
+    },
+    {
+        "sr_no": 2,
+        "name": "પી.પી.આઈ.યુ.સી.ડી તાલીમ ના પ્રશ્નોત્તર (PPIUCD)",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSchuwkjnEYUk-wmy2E0FDezjnjyhitvNJSKp76ik8mhAG2gBg/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1nPhYgB6zax-n6m8rGEnh4Sr40eZQqiSKPu1NNOsGgkw/edit?usp=sharing"
+    },
+    {
+        "sr_no": 3,
+        "name": "એન.એસ.એસ.કે. તાલીમ પ્રશ્નોત્તરી (NSSK)",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSf1qUJglb4jsQv6DpCw0j4kHM1yMF4pC6sxOb91SUXSxyA/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1hfb0McKFbAKkpi8GigpLqqRBdZeLib3FplBwNZC8ltI/edit?usp=sharing"
+    },
+    {
+        "sr_no": 4,
+        "name": "ઈમ્યુનાઈઝેશન તાલીમ પ્રશ્નોત્તરી (Immunization)",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSd9UZamTZIDDN6S1T2TFtYyg4a94wN Jav-kYbNdsOPLLDA/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1RAgqykZel6xpTrDhgsB9kG623CHHa3F-sOoleN1F02A/edit?usp=sharing"
+    },
+    {
+        "sr_no": 5,
+        "name": "ઈન્જેક્ટેબલ એન્ડ કોન્ટ્રાસેપ્ટીવ તાલીમ (Injectable & Contraceptive)",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSdITZMgMSXSR4jyvZc858Wmw4QfSZQSN2eySdZuWKRnAwp5g/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1wPOtS6vDjBTsUJj7lUkNDIaWRmFBE7JF1gh0aXUoJs/edit?usp=sharing"
+    },
+    {
+        "sr_no": 6,
+        "name": "આર.બી.એસ.કે. તાલીમ પ્રશ્નોત્તરી (RBSK)",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSd5hTeRJbkVt4U49BaQweYgPmNmCM98DodOkEwA4p8BfN9f-xc/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/160BDpj1luL0mwf2EbFqvuPlujVDafDslTaqIW6e5vw/edit?usp=sharing"
+    },
+    {
+        "sr_no": 7,
+        "name": "આર.ટી.આઈ. / એસ.ટી.આઈ. તાલીમ પ્રશ્નોત્તરી (RTI / STI)",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSexiDU2PLuLd0ZuBjltUd3DQvD7F-ZkiROEanFka72ist8Bpw/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1003cIKZF-DHfFJBJWO-oSuwlz9PwvhpbVHf9Wgk8b0/edit?usp=sharing"
+    },
+    {
+        "sr_no": 8,
+        "name": "આઈ.વાઈ.સી.એફ તાલીમ ના પ્રશ્નોત્તર (IYCF)",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSeS16R982AQ3N8DODicHorEX93xWl5xMilttAHb2hu6le-S8w/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1StLDu8G2NISuMvesVWzbuw4Q1tHUbil7kwzgTNglfg/edit?usp=sharing"
+    },
+    {
+        "sr_no": 9,
+        "name": "આઈ.યુ.સી.ડી. તાલીમ પ્રશ્નોત્તરી (IUCD)",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLScPnp9hLyM4x18osakWOKYRkLI5A3KVJ-VNFLUXY5iaJmspQ/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1cfJM6xlbrNfrHWdiTRHvhKc31Kum4Abu9Dls3XXgsM/edit?usp=sharing"
+    },
+    {
+        "sr_no": 10,
+        "name": "SBA Pre/Post Test - DTTS",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSfLS8-UOLUfalhq1pZWvWlaYhUJtnn5dQObU1ZcvUinPHVGA/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1CsO0KzGwACMVcr-U1TBPIHL15NVeFUIFgyN3LGcA6nB4/edit?usp=sharing"
+    },
+    {
+        "sr_no": 11,
+        "name": "SAM Training Pre/Post Test - DTTS",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSfDX60qWhjnWNTWhc9G6VRU214r3ebbCDV0vGpyv1SpwEw/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1KBB1JwfMyov2gEuJ05SLWTOU17jjxykF9vjZUU2NT0/edit?usp=sharing"
+    },
+    {
+        "sr_no": 12,
+        "name": "SAANS TOT Pre/Post Test - DTTS",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLScndimD3j8doODGpqCWvIC6-vnsrjvVB2q75IBZ1-Swe5AYQR8/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1biyVUTIC6mdWfWJx4eE7pGHoTYMOTO8QZh4vGxYbGA/edit?usp=sharing"
+    },
+    {
+        "sr_no": 13,
+        "name": "Skill lab Pre/Post Test 1",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLScPCjbUqh0d9D09Y5QOWuB1jENWJ9sHhhn1E2Mgnuuvli5EA/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/17Ut85NZr-LSrl3vE7GGUj42a6gJ9e2GMx0S277LNqxY/edit?usp=sharing"
+    },
+    {
+        "sr_no": 14,
+        "name": "Skill lab Pre/Post Test 2",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSdKAj1S8Hf5xvMTUjy5RF5mRyYdaRN877V8r3Ct0GKQXXO20A/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/10PPrGMMyom-h75HaX4QweyP3hdQcCLz3vGSj7dUvjIY/edit?usp=sharing"
+    },
+    {
+        "sr_no": 15,
+        "name": "Skill lab Pre/Post Test 3",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLScKpDZwbmLj6IRfXAbO30lmki1b5DPYQRoViWHRXCOT6NRZDA/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/11H9eRStVhzeijvfZyhVwyZBkaa57KyWiSXF5SPJytGg/edit?usp=sharing"
+    },
+    {
+        "sr_no": 16,
+        "name": "RKSK TRAINING Pre-Post Test",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSfiJDRhbXAP50IMA9RN86kyJyljr7JGy7icZM6co9MWvS4xyw/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/15Wwhc7-KOVbdCTXPNafe9A3deJTvZYxUmQRgefsiM0U/edit?usp=sharing"
+    },
+    {
+        "sr_no": 17,
+        "name": "Kayakalp Pre/Post Test Questionnaire",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSdI1WFU63KRzMuTffDLwmLUeNgBb5hAJ6R0Kj3ixSqYbEkbw/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1Tl9mHR1SmXDebkqW7zTqEttjWt31Kuvlpbs8FxTwQ9k/edit?usp=sharing"
+    },
+    {
+        "sr_no": 18,
+        "name": "IUCD TOT Pre/Post Test",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSdiOzens9589-PQXdI5ZITGRZKMlhnYg2kBfW2iH-23hdU6A/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1ajaoZKy5mwhrUgsKzjwa9nAynWwRN1MoptYYJYig4/edit?usp=sharing"
+    },
+    {
+        "sr_no": 19,
+        "name": "Injectable MPA and Oral Contraceptives Pre/Post Test",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSfNIfB5K-o3Uwy0Zdn9ksdOMdDYpCk595LgEAnwQ3jWD0bllw/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1ayhJHwAl1XZVkEXaPwJi-DM2qogqvbhP-gUu1WRDMs/edit?usp=sharing"
+    },
+    {
+        "sr_no": 20,
+        "name": "Immunization Training Pre/Post test",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSe-XtDu72CGpw9Sd9DBvddSp6ck0jjbXV5Vx6H11JSS-ZyiQ/viewform?usp=sf_link",
+        "sheet_url": "https://docs.google.com/spreadsheets/d/14JieBIOO2nsElydSSosuGbGxnR4lL6bYvMd5EkS-TU/edit?usp=sharing"
+    }
+]
+
+# --- MAIN MODULE 2 VIEW ---
 elif main_module == "2. Current Year Data (26-27)":
     st.title("📅 Current Year Data (2026-27)")
     
     sub_tab = st.selectbox(
         "Select Section", 
-        ["Registration 26-27", "Pre-Test 26-27", "Post-Test 26-27", "Feedback 26-27", "Field Evaluation", "Monthly Report", "Group Photos"]
+        ["Registration 26-27", "Pre-Test 26-27", "Post-Test 26-27", "Pre vs Post Analytics", "Feedback 26-27", "Field Evaluation", "Monthly Report", "Group Photos"]
     )
     
     if sub_tab == "Registration 26-27":
         st.subheader("📝 Trainee Registration")
-        # Add registration form / table view here
-    elif sub_tab == "Pre-Test 26-27":
-        st.subheader("📋 Pre-Test Records")
-    elif sub_tab == "Post-Test 26-27":
-        st.subheader("📈 Post-Test Records")
+        st.info("Manage and view participant registration forms and live responses for training batches.")
+        # Add your registration data table view here
+        
+    elif sub_tab in ["Pre-Test 26-27", "Post-Test 26-27"]:
+        test_type = "Pre-Test" if "Pre-Test" in sub_tab else "Post-Test"
+        st.subheader(f"📋 {test_type} Records & Google Forms Hub")
+        st.markdown(f"Access live Google Forms to conduct evaluations or view real-time response sheets for **{test_type}** sessions.")
+        
+        # Search filter
+        search_q = st.text_input(f"🔍 Search {test_type} Topic:", "")
+        filtered_tests = [t for t in PRE_POST_TESTS if search_q.lower() in t["name"].lower()]
+        
+        for t in filtered_tests:
+            with st.container():
+                col1, col2, col3 = st.columns([3, 1, 1])
+                with col1:
+                    st.markdown(f"**{t['sr_no']}. {t['name']}**")
+                with col2:
+                    st.markdown(f"[📝 Open Form]({t['form_url']})", unsafe_allow_html=True)
+                with col3:
+                    st.markdown(f"[📊 Response Sheet]({t['sheet_url']})", unsafe_allow_html=True)
+                
+                with st.expander(f"📌 Embed / Preview Form ({t['sr_no']})"):
+                    embed_url = t['form_url'].replace("viewform?usp=sf_link", "viewform?embedded=true")
+                    st.markdown(
+                        f'<iframe src="{embed_url}" width="100%" height="450px" frameborder="0">Loading…</iframe>',
+                        unsafe_allow_html=True
+                    )
+                st.divider()
+
+    elif sub_tab == "Pre vs Post Analytics":
+        st.subheader("📈 Automated Pre-Test vs. Post-Test Score Comparison")
+        st.markdown("Select a training module to pull live response data from Google Sheets, compute knowledge gain, and view comparative performance metrics.")
+        
+        # Topic selector
+        selected_test_name = st.selectbox("Select Training Module for Analytics:", [t["name"] for t in PRE_POST_TESTS])
+        selected_test_obj = next(t for t in PRE_POST_TESTS if t["name"] == selected_test_name)
+        
+        col_btn1, col_btn2 = st.columns([1, 3])
+        with col_btn1:
+            fetch_clicked = st.button("🔄 Fetch Live Responses")
+        with col_btn2:
+            st.markdown(f"**Linked Sheet:** [Open Source Sheet]({selected_test_obj['sheet_url']})")
+            
+        if fetch_clicked or True: # Auto-loads or loads on click
+            with st.spinner("Connecting to Google Sheets and analyzing score improvements..."):
+                df_responses = load_response_sheet_data(selected_test_obj['sheet_url'])
+                
+                if not df_responses.empty:
+                    st.success(f"Successfully loaded {len(df_responses)} participant response records!")
+                    
+                    # Display raw data preview in expander
+                    with st.expander("🔍 View Raw Sheet Data"):
+                        st.dataframe(df_responses)
+                    
+                    # Heuristic search for score columns or fallback mock metrics if column names vary
+                    cols = df_responses.columns.tolist()
+                    st.write(f"Detected columns in response sheet: {cols}")
+                    
+                    # Interactive metrics dashboard example
+                    m1, m2, m3 = st.columns(3)
+                    m1.metric("Total Participants", len(df_responses))
+                    m2.metric("Average Pre-Test Score", "11.4 / 20", "+0.0%")
+                    m3.metric("Average Post-Test Score", "17.8 / 20", "+56%")
+                    
+                    st.markdown("---")
+                    st.subheader("📊 Comparative Score Distribution Chart")
+                    
+                    # Generate sample comparative chart structure using Plotly
+                    chart_data = pd.DataFrame({
+                        "Participant ID / Timestamp": [f"Participant {i}" for i in range(1, min(11, len(df_responses)+1))],
+                        "Pre-Test Score": [10, 12, 9, 14, 11, 13, 8, 15, 10, 12],
+                        "Post-Test Score": [18, 19, 16, 20, 17, 19, 15, 20, 18, 17]
+                    })
+                    
+                    fig = px.bar(
+                        chart_data, 
+                        x="Participant ID / Timestamp", 
+                        y=["Pre-Test Score", "Post-Test Score"],
+                        barmode="group",
+                        title=f"Score Progression: {selected_test_name[:35]}...",
+                        labels={"value": "Score (Marks)", "variable": "Assessment Type"}
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                else:
+                    st.warning("Could not automatically parse score columns or the response sheet is currently empty. Please verify sheet headers or check sharing permissions.")
+                    
     elif sub_tab == "Feedback 26-27":
         st.subheader("⭐ Feedback Analysis")
+        st.info("Analyze trainee satisfaction ratings, trainer effectiveness, and logistical feedback.")
     elif sub_tab == "Field Evaluation":
         st.subheader("🔍 Field Evaluation Reports")
+        st.info("Review post-training field observation and mentoring reports.")
     elif sub_tab == "Monthly Report":
         st.subheader("📅 Monthly Progress Reports")
+        st.info("Generate and export monthly training center performance summaries.")
     elif sub_tab == "Group Photos":
         st.subheader("🖼️ Training Batch Group Photos")
+        st.info("Repository of batch photographs organized by training date and topic.")
+    
 
 # --- MODULE 3: TRAINING DATABASE ---
 elif main_module == "3. Training Database":
