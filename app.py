@@ -183,15 +183,14 @@ def get_gspread_client():
 
 @st.cache_data(ttl=600)
 def load_response_sheet_data(sheet_url: str) -> pd.DataFrame:
-    """Safely loads participant scores or responses from a public/shared Google Sheet URL."""
+    """Safely loads participant scores or responses from a shared Google Sheet URL."""
     try:
         client = get_gspread_client()
-        sh = client.open_by_url(sheet_url)
+        sh = client.open_by_url(sheet_url.strip())
         worksheet = sh.get_worksheet(0) # Grabs the first worksheet (Responses)
         data = worksheet.get_all_records()
         return pd.DataFrame(data)
     except Exception as e:
-        # Fallback empty dataframe if sheet format varies or has auth restrictions
         return pd.DataFrame()
 
 
@@ -218,7 +217,7 @@ PRE_POST_TESTS = [
     {
         "sr_no": 4,
         "name": "ઈમ્યુનાઈઝેશન તાલીમ પ્રશ્નોત્તરી (Immunization)",
-        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSd9UZamTZIDDN6S1T2TFtYyg4a94wN Jav-kYbNdsOPLLDA/viewform?usp=sf_link",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSd9UZamTZIDDN6S1T2TFtYyg4a94wNJav-kYbNdsOPLLDA/viewform?usp=sf_link",
         "sheet_url": "https://docs.google.com/spreadsheets/d/1RAgqykZel6xpTrDhgsB9kG623CHHa3F-sOoleN1F02A/edit?usp=sharing"
     },
     {
@@ -319,7 +318,7 @@ PRE_POST_TESTS = [
     }
 ]
 
-# --- SIDEBAR NAVIGATION EXAMPLE (Ensure main_module is defined) ---
+# --- SIDEBAR NAVIGATION EXAMPLE ---
 st.sidebar.title("Navigation Menu")
 main_module = st.sidebar.selectbox(
     "Select Main Module",
@@ -364,7 +363,7 @@ elif main_module == "2. Current Year Data (26-27)":
                 with st.expander(f"📌 Embed / Preview Form ({t['sr_no']})"):
                     embed_url = t['form_url'].replace("viewform?usp=sf_link", "viewform?embedded=true")
                     st.markdown(
-                        f'<iframe src="{embed_url}" width="100%" height="450px" frameborder="0">Loading…</iframe>',
+                        f'<iframe src="{embed_url}" width="100%" height="450px" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>',
                         unsafe_allow_html=True
                     )
                 st.divider()
@@ -391,9 +390,6 @@ elif main_module == "2. Current Year Data (26-27)":
                     
                     with st.expander("🔍 View Raw Sheet Data"):
                         st.dataframe(df_responses)
-                    
-                    cols = df_responses.columns.tolist()
-                    st.write(f"Detected columns in response sheet: {cols}")
                     
                     m1, m2, m3 = st.columns(3)
                     m1.metric("Total Participants", len(df_responses))
