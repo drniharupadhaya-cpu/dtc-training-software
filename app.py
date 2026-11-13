@@ -178,7 +178,8 @@ main_module = st.sidebar.selectbox(
         "2. Current Year Data (26-27)", 
         "3. Training Database", 
         "4. Knowledge Bank", 
-        "5. About Us"
+        "5. About Us",
+        "6. Interactive Mock Exams"
     ]
 )
 
