@@ -229,7 +229,7 @@ PRE_POST_TESTS = [
     {
         "sr_no": 6,
         "name": "આર.બી.એસ.કે. તાલીમ પ્રશ્નોત્તરી (RBSK)",
-        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSd5hTeRJbkVt4U49BaQweYgPmNmCM98DodOkEwA4p8BfN9f-xc/viewform?usp=sf_link",
+        "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSd5hTeRJbkVt4U49BaQweYgPFqvuPlujVDafDslTaqIW6e5vw/viewform",
         "sheet_url": "https://docs.google.com/spreadsheets/d/160BDpj1luL0mwf2EbFqvuPlujVDafDslTaqIW6e5vw/edit?usp=sharing"
     },
     {
