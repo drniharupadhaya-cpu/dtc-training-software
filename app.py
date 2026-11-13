@@ -4,6 +4,7 @@ import plotly.express as px
 import gspread
 from google.oauth2.service_account import Credentials
 
+
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="District Training Team Software",
@@ -854,3 +855,8 @@ elif main_module == "5. About Us":
         st.write("District Training Team Profile and administrative structure.")
         st.subheader("📞 Contact Info")
         st.write("Get in touch with the DTT administration and training coordinators.")
+# ==========================================
+# --- MODULE 6: INTERACTIVE MOCK EXAMS ---
+# ==========================================
+elif main_module == "6. Interactive Mock Exams":
+    render_mock_exams_module()
