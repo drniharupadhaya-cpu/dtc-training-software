@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import gspread
 from google.oauth2.service_account import Credentials
+from module_6_exams import render_mock_exams_module
 
 
 # --- PAGE CONFIGURATION ---
