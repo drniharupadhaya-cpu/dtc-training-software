@@ -319,7 +319,18 @@ PRE_POST_TESTS = [
     }
 ]
 
-# --- MAIN MODULE 2 VIEW ---
+# --- SIDEBAR NAVIGATION EXAMPLE (Ensure main_module is defined) ---
+st.sidebar.title("Navigation Menu")
+main_module = st.sidebar.selectbox(
+    "Select Main Module",
+    ["1. Dashboard", "2. Current Year Data (26-27)", "3. Other Modules"]
+)
+
+# --- MAIN MODULE ROUTER ---
+if main_module == "1. Dashboard":
+    st.title("📊 Executive Dashboard")
+    st.info("Welcome to the DTC Training Center dashboard.")
+
 elif main_module == "2. Current Year Data (26-27)":
     st.title("📅 Current Year Data (2026-27)")
     
@@ -331,14 +342,12 @@ elif main_module == "2. Current Year Data (26-27)":
     if sub_tab == "Registration 26-27":
         st.subheader("📝 Trainee Registration")
         st.info("Manage and view participant registration forms and live responses for training batches.")
-        # Add your registration data table view here
         
     elif sub_tab in ["Pre-Test 26-27", "Post-Test 26-27"]:
         test_type = "Pre-Test" if "Pre-Test" in sub_tab else "Post-Test"
         st.subheader(f"📋 {test_type} Records & Google Forms Hub")
         st.markdown(f"Access live Google Forms to conduct evaluations or view real-time response sheets for **{test_type}** sessions.")
         
-        # Search filter
         search_q = st.text_input(f"🔍 Search {test_type} Topic:", "")
         filtered_tests = [t for t in PRE_POST_TESTS if search_q.lower() in t["name"].lower()]
         
@@ -364,7 +373,6 @@ elif main_module == "2. Current Year Data (26-27)":
         st.subheader("📈 Automated Pre-Test vs. Post-Test Score Comparison")
         st.markdown("Select a training module to pull live response data from Google Sheets, compute knowledge gain, and view comparative performance metrics.")
         
-        # Topic selector
         selected_test_name = st.selectbox("Select Training Module for Analytics:", [t["name"] for t in PRE_POST_TESTS])
         selected_test_obj = next(t for t in PRE_POST_TESTS if t["name"] == selected_test_name)
         
@@ -374,22 +382,19 @@ elif main_module == "2. Current Year Data (26-27)":
         with col_btn2:
             st.markdown(f"**Linked Sheet:** [Open Source Sheet]({selected_test_obj['sheet_url']})")
             
-        if fetch_clicked or True: # Auto-loads or loads on click
+        if fetch_clicked or True: 
             with st.spinner("Connecting to Google Sheets and analyzing score improvements..."):
                 df_responses = load_response_sheet_data(selected_test_obj['sheet_url'])
                 
                 if not df_responses.empty:
                     st.success(f"Successfully loaded {len(df_responses)} participant response records!")
                     
-                    # Display raw data preview in expander
                     with st.expander("🔍 View Raw Sheet Data"):
                         st.dataframe(df_responses)
                     
-                    # Heuristic search for score columns or fallback mock metrics if column names vary
                     cols = df_responses.columns.tolist()
                     st.write(f"Detected columns in response sheet: {cols}")
                     
-                    # Interactive metrics dashboard example
                     m1, m2, m3 = st.columns(3)
                     m1.metric("Total Participants", len(df_responses))
                     m2.metric("Average Pre-Test Score", "11.4 / 20", "+0.0%")
@@ -398,7 +403,6 @@ elif main_module == "2. Current Year Data (26-27)":
                     st.markdown("---")
                     st.subheader("📊 Comparative Score Distribution Chart")
                     
-                    # Generate sample comparative chart structure using Plotly
                     chart_data = pd.DataFrame({
                         "Participant ID / Timestamp": [f"Participant {i}" for i in range(1, min(11, len(df_responses)+1))],
                         "Pre-Test Score": [10, 12, 9, 14, 11, 13, 8, 15, 10, 12],
@@ -430,6 +434,10 @@ elif main_module == "2. Current Year Data (26-27)":
     elif sub_tab == "Group Photos":
         st.subheader("🖼️ Training Batch Group Photos")
         st.info("Repository of batch photographs organized by training date and topic.")
+
+elif main_module == "3. Other Modules":
+    st.title("📂 Other Modules")
+    st.info("Additional application modules.")
     
 
 # --- MODULE 3: TRAINING DATABASE ---
