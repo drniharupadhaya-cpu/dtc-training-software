@@ -818,8 +818,8 @@ elif main_module == "4. Training Knowledge Bank":
     sheet_resources = pd.DataFrame()
     if not kb_df.empty and 'DOMAIN' in kb_df.columns and 'SUB_MODULE' in kb_df.columns:
         sheet_resources = kb_df[
-            (kb_df['DOMAIN'].astype(str).str.strip().str.upper() == str(selected_category).strip().str.upper()) &
-            (kb_df['SUB_MODULE'].astype(str).str.strip().str.upper() == str(selected_sub_module).strip().str.upper()) &
+            (kb_df['DOMAIN'].astype(str).str.strip().str.upper() == str(selected_category).strip().upper()) &
+            (kb_df['SUB_MODULE'].astype(str).str.strip().str.upper() == str(selected_sub_module).strip().upper()) &
             (kb_df['FILE_TITLE'].astype(str).str.strip() != "")
         ]
 
