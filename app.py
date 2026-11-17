@@ -44,6 +44,18 @@ def load_response_sheet_data(sheet_url: str) -> pd.DataFrame:
     except Exception as e:
         pass
     return pd.DataFrame()
+@st.cache_data(ttl=600)
+def load_knowledge_bank_data() -> pd.DataFrame:
+    """Fetches training resources metadata from the KNOWLEDGE_BANK worksheet."""
+    try:
+        if client:
+            sh = client.open("SMO_Database")
+            ws = sh.worksheet("KNOWLEDGE_BANK")
+            data = ws.get_all_records()
+            return pd.DataFrame(data)
+    except Exception as e:
+        pass
+    return pd.DataFrame()
 
 
 # --- MASTER REGISTRY OF PRE/POST TESTS (2026-27) ---
@@ -763,16 +775,17 @@ elif main_module == "3. Training Database":
 
 
 # ==========================================
-# --- MODULE 4:  TRAINING KNOWLEDGE BANK ---
+# --- MODULE 4: TRAINING KNOWLEDGE BANK ---
 # ==========================================
 elif main_module == "4. Training Knowledge Bank":
     st.title("📚 Knowledge Bank & Training Resource Repository")
     st.markdown("Explore district training materials, guidelines, operational modules, and multi-tier cascading resources.")
 
+    # Master cascading hierarchy (Preserved completely)
     kb_hierarchy = {
         "NVBDCP (Vector Borne Diseases)": ["MALARIA", "DENGUE", "CHICKEN GUNIA", "FILERIA"],
         "Maternal Health": ["SBA", "DAKSHTA training"],
-        "Child Health": ["RBSK - 5 DAYS", "MO DELIVERY POINT RBSK", "RBSK REFRESHER ANM", "NSSK", "SAANS", "IMNCI", "IYCF", "IMMUNIZATION", "HBYC", "KMC", "AEFI"],
+        "Child Health": ["RBSK - 5 DAYS", "MO DELIVERY POINT RBSK", "RBSK REFRESHER ANM", "NSSK", "SAANS", "IMNCI", "IYCF", "IMMUNIZATION", "HBYC", "KMC", "AEFI", "AMB"],
         "Adolescent Health": ["AFHS", "PEER EDUCTER", "NODAL TEACHER"],
         "FP / Reproductive Health": ["RTI/STI", "IUCD+ PPIUCD", "NEW CONTRACEPTIVES", "FP LIMS"],
         "NCD (Non-Communicable Diseases)": ["CANCER SCREENING", "DIABETES", "HYPERTENSION", "NMHP"],
@@ -789,14 +802,26 @@ elif main_module == "4. Training Knowledge Bank":
 
     col_filter1, col_filter2 = st.columns(2)
     with col_filter1:
-        selected_category = st.selectbox("📂 Select Primary Training Domain", list(kb_hierarchy.keys()))
+        selected_category = st.selectbox("📂 Select Primary Training Domain", list(kb_hierarchy.keys()), key="kb_cat_select")
     with col_filter2:
         sub_modules = kb_hierarchy.get(selected_category, ["General Resources"])
-        selected_sub_module = st.selectbox("📑 Select Cascading Training Module", sub_modules)
+        selected_sub_module = st.selectbox("📑 Select Cascading Training Module", sub_modules, key="kb_sub_select")
 
     st.markdown("---")
     st.subheader(f"🎯 Training Resource Hub: **{selected_sub_module}**")
     st.markdown(f"*Parent Domain:* `{selected_category}`")
+
+    # Fetch live files from Google Sheet tab 'KNOWLEDGE_BANK'
+    kb_df = load_knowledge_bank_data()
+    
+    # Filter sheet records matching the selected domain and sub-module
+    sheet_resources = pd.DataFrame()
+    if not kb_df.empty and 'DOMAIN' in kb_df.columns and 'SUB_MODULE' in kb_df.columns:
+        sheet_resources = kb_df[
+            (kb_df['DOMAIN'].astype(str).str.strip().str.upper() == str(selected_category).strip().str.upper()) &
+            (kb_df['SUB_MODULE'].astype(str).str.strip().str.upper() == str(selected_sub_module).strip().str.upper()) &
+            (kb_df['FILE_TITLE'].astype(str).str.strip() != "")
+        ]
 
     res_tab1, res_tab2, res_tab3, res_tab4 = st.tabs([
         "📖 Guidelines & Manuals (PDF)", 
@@ -807,28 +832,61 @@ elif main_module == "4. Training Knowledge Bank":
 
     with res_tab1:
         st.markdown(f"#### Official Guidelines for {selected_sub_module}")
-        st.info(f"Standard Operating Procedures (SOPs) and National Guidelines for {selected_sub_module} issued by MoHFW & State Health Department.")
-        st.download_button(
-            label=f"📥 Download {selected_sub_module} Official Guideline (PDF)",
-            data=b"Mock PDF Content for Training Material",
-            file_name=f"{selected_sub_module.replace(' ', '_')}_Guideline.pdf",
-            mime="application/pdf"
-        )
+        pdf_records = sheet_resources[sheet_resources['FILE_TYPE'].astype(str).str.upper().str.contains("PDF")] if not sheet_resources.empty else pd.DataFrame()
+        
+        if not pdf_records.empty:
+            for _, row in pdf_records.iterrows():
+                col_d1, col_d2 = st.columns([3, 1])
+                with col_d1:
+                    st.markdown(f"📄 **{row['FILE_TITLE']}**")
+                    st.caption(row.get('DESCRIPTION', 'Official Guidelines & SOPs'))
+                with col_d2:
+                    st.markdown(f"[📥 Download PDF]({row['FILE_URL']})", unsafe_allow_html=True)
+                st.divider()
+        else:
+            st.info(f"Standard Operating Procedures (SOPs) and National Guidelines for {selected_sub_module} issued by MoHFW & State Health Department.")
+            st.download_button(
+                label=f"📥 Download {selected_sub_module} Official Guideline (PDF)",
+                data=b"Mock PDF Content for Training Material",
+                file_name=f"{selected_sub_module.replace(' ', '_')}_Guideline.pdf",
+                mime="application/pdf",
+                key=f"def_pdf_{selected_sub_module}"
+            )
 
     with res_tab2:
         st.markdown(f"#### District Training Presentations")
-        st.write("Train-the-Trainer (ToT) slide decks used for district-level rollout and capacity building.")
-        st.download_button(
-            label=f"📥 Download {selected_sub_module} Master Presentation (PPTX)",
-            data=b"Mock PPTX Content",
-            file_name=f"{selected_sub_module.replace(' ', '_')}_Presentation.pptx",
-            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-        )
+        pptx_records = sheet_records[sheet_records['FILE_TYPE'].astype(str).str.upper().str.contains("PPT")] if not sheet_resources.empty else pd.DataFrame()
+        
+        if not pptx_records.empty:
+            for _, row in pptx_records.iterrows():
+                col_p1, col_p2 = st.columns([3, 1])
+                with col_p1:
+                    st.markdown(f"📊 **{row['FILE_TITLE']}**")
+                    st.caption(row.get('DESCRIPTION', 'Master Presentation Deck'))
+                with col_p2:
+                    st.markdown(f"[📥 Download PPTX]({row['FILE_URL']})", unsafe_allow_html=True)
+                st.divider()
+        else:
+            st.write("Train-the-Trainer (ToT) slide decks used for district-level rollout and capacity building.")
+            st.download_button(
+                label=f"📥 Download {selected_sub_module} Master Presentation (PPTX)",
+                data=b"Mock PPTX Content",
+                file_name=f"{selected_sub_module.replace(' ', '_')}_Presentation.pptx",
+                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                key=f"def_pptx_{selected_sub_module}"
+            )
 
     with res_tab3:
         st.markdown(f"#### Video Resources & Skill Station Walkthroughs")
-        st.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
-        st.caption(f"Official Ministry video tutorial covering practical clinical/field protocols for {selected_sub_module}.")
+        video_records = sheet_records[sheet_records['FILE_TYPE'].astype(str).str.upper().str.contains("VIDEO|MP4|YOUTUBE")] if not sheet_resources.empty else pd.DataFrame()
+        
+        if not video_records.empty:
+            for _, row in video_records.iterrows():
+                st.markdown(f"🎥 **{row['FILE_TITLE']}**")
+                st.video(row['FILE_URL'])
+        else:
+            st.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+            st.caption(f"Official Ministry video tutorial covering practical clinical/field protocols for {selected_sub_module}.")
 
     with res_tab4:
         st.markdown(f"#### Assessment Tools & Evaluation Forms")
