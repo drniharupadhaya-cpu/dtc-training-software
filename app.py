@@ -763,9 +763,9 @@ elif main_module == "3. Training Database":
 
 
 # ==========================================
-# --- MODULE 4: KNOWLEDGE BANK ---
+# --- MODULE 4:  TRAINING KNOWLEDGE BANK ---
 # ==========================================
-elif main_module == "4. Knowledge Bank":
+elif main_module == "4. TRAINING KNOWLEDGE BANK":
     st.title("📚 Knowledge Bank & Training Resource Repository")
     st.markdown("Explore district training materials, guidelines, operational modules, and multi-tier cascading resources.")
 
