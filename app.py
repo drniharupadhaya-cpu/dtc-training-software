@@ -179,7 +179,7 @@ main_module = st.sidebar.selectbox(
         "1. Training Summary", 
         "2. Current Year Data (26-27)", 
         "3. Training Database", 
-        "4. Knowledge Bank", 
+        "4. Training Knowledge Bank", 
         "5. About Us",
         "6. Interactive Mock Exams"
     ]
@@ -765,7 +765,7 @@ elif main_module == "3. Training Database":
 # ==========================================
 # --- MODULE 4:  TRAINING KNOWLEDGE BANK ---
 # ==========================================
-elif main_module == "4. TRAINING KNOWLEDGE BANK":
+elif main_module == "4. Training Knowledge Bank":
     st.title("📚 Knowledge Bank & Training Resource Repository")
     st.markdown("Explore district training materials, guidelines, operational modules, and multi-tier cascading resources.")
 
